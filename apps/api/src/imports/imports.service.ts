@@ -256,39 +256,48 @@ export class ImportsService {
     };
   }
 
-  private mergeAiSuggestions(
-    mappings: ColumnMappingSuggestion[],
-    aiResult: AiMappingResult,
-  ) {
-    return mappings.map((mapping) => {
-      const aiSuggestion =
-        aiResult.suggestions.find(
-          (suggestion) =>
-            suggestion.columnIndex ===
-            mapping.columnIndex,
-        );
+ private mergeAiSuggestions(
+  mappings: ColumnMappingSuggestion[],
+  aiResult: AiMappingResult,
+) {
+  return mappings.map((mapping) => {
+    const aiSuggestion =
+      aiResult.suggestions.find(
+        (suggestion) =>
+          suggestion.columnIndex ===
+          mapping.columnIndex,
+      );
 
-      if (!aiSuggestion) {
-        return {
-          ...mapping,
-          aiSuggestion: null,
-        };
-      }
-
+    if (!aiSuggestion) {
       return {
         ...mapping,
+        aiSuggestion: null,
 
-        aiSuggestion: {
-          suggestedField:
-            aiSuggestion.suggestedField,
-
-          confidence:
-            aiSuggestion.confidence,
-
-          reason:
-            aiSuggestion.reason,
-        },
+        reviewRequired:
+          mapping.requiresConfirmation ||
+          mapping.ambiguous,
       };
-    });
-  }
+    }
+
+    return {
+      ...mapping,
+
+      aiSuggestion: {
+        suggestedField:
+          aiSuggestion.suggestedField,
+
+        confidence:
+          aiSuggestion.confidence,
+
+        reason:
+          aiSuggestion.reason,
+      },
+
+      reviewRequired:
+        mapping.requiresConfirmation ||
+        mapping.ambiguous ||
+        aiSuggestion.confidence < 0.9,
+    };
+  });
+}
 }
