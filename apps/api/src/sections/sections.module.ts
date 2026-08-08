@@ -1,11 +1,10 @@
 import { Module } from '@nestjs/common';
 import { GradesModule } from '../grades/grades.module';
-import { SchoolYearsModule } from '../school-years/school-years.module';
 import { PrismaModule } from '../prisma/prisma.module';
-
+import { SchoolYearsModule } from '../school-years/school-years.module';
 import { SectionsController } from './sections.controller';
-import { SectionsService } from './sections.service';
 import { SectionsRepository } from './sections.repository';
+import { SectionsService } from './sections.service';
 
 @Module({
   imports: [
@@ -16,6 +15,9 @@ import { SectionsRepository } from './sections.repository';
   controllers: [SectionsController],
   providers: [
     SectionsService,
+    SectionsRepository,
+  ],
+  exports: [
     SectionsRepository,
   ],
 })

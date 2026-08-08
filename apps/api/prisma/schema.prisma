@@ -16,13 +16,15 @@ datasource db {
 }
 
 model SchoolYear {
-  id        String   @id @default(uuid())
-  label     String   @unique
-  isActive  Boolean  @default(false)
+  id       String  @id @default(uuid())
+  label    String  @unique
+  isActive Boolean @default(false)
+
+  sections    Section[]
+  enrollments Enrollment[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  sections Section[]
 }
 
 model Grade {
@@ -44,10 +46,61 @@ model Section {
   grade      Grade      @relation(fields: [gradeId], references: [id])
   schoolYear SchoolYear @relation(fields: [schoolYearId], references: [id])
 
+  enrollments Enrollment[]
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@unique([name, gradeId, schoolYearId])
   @@index([gradeId])
+  @@index([schoolYearId])
+}
+
+model Student {
+  id  String  @id @default(uuid())
+  lrn String? @unique
+
+  firstName  String
+  middleName String?
+  lastName   String
+  suffix     String?
+
+  birthday   DateTime?
+  birthplace String?
+  address    String?
+
+  fatherName    String?
+  motherName    String?
+  guardianName  String?
+  contactNumber String?
+
+  remarks String?
+
+  archivedAt DateTime?
+
+  enrollments Enrollment[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Enrollment {
+  id           String @id @default(uuid())
+  studentId    String
+  sectionId    String
+  schoolYearId String
+
+  status       String   @default("ACTIVE")
+  dateEnrolled DateTime @default(now())
+
+  student    Student    @relation(fields: [studentId], references: [id])
+  section    Section    @relation(fields: [sectionId], references: [id])
+  schoolYear SchoolYear @relation(fields: [schoolYearId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([studentId, schoolYearId])
+  @@index([sectionId])
   @@index([schoolYearId])
 }
