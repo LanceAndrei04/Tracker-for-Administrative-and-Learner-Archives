@@ -23,13 +23,4 @@ export class ImportsController {
     return this.importsService.upload(file);
   }
 
-  @Get('test-normalizers')
-  testNormalizers() {
-  return this.importsService.testNormalizers();
-}
-
-@Get('test-patterns')
-testPatterns() {
-  return this.importsService.testPatterns();
-}
 }

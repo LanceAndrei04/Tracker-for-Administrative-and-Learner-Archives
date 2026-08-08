@@ -2,30 +2,32 @@ import {
   BadRequestException,
   Injectable,
 } from '@nestjs/common';
-import { XlsxParser } from './parsers/xlsx.parser';
-import { ColumnMapperService } from './mapping/column-mapper.service';
 
-import { TextNormalizer } from './normalization/normalizers/text.normalizer';
-import { IdentifierNormalizer } from './normalization/normalizers/identifier.normalizer';
-import { PhoneNormalizer } from './normalization/normalizers/phone.normalizer';
-import { DateNormalizer } from './normalization/normalizers/date.normalizer';
-import { PersonNameNormalizer } from './normalization/normalizers/person-name.normalizer';
-import { GradeNormalizer } from './normalization/normalizers/grade.normalizer';
+import { XlsxParser } from './parsers/xlsx.parser';
+
+import { ColumnMapperService } from './mapping/column-mapper.service';
+import { getImportSchema } from './mapping/mapping-registry';
+
+import type {
+  ColumnMappingSuggestion,
+  ImportTarget,
+} from './mapping/mapping.types';
+
 import { SamplePatternService } from './ai/sample-pattern.service';
+import { AiMappingService } from './ai/ai-mapping.service';
+
+import type {
+  AiMappingRequest,
+  AiMappingResult,
+} from './ai/ai-mapping.types';
 
 @Injectable()
 export class ImportsService {
   constructor(
     private readonly xlsxParser: XlsxParser,
     private readonly columnMapper: ColumnMapperService,
-
-  private readonly textNormalizer: TextNormalizer,
-  private readonly identifierNormalizer: IdentifierNormalizer,
-  private readonly phoneNormalizer: PhoneNormalizer,
-  private readonly dateNormalizer: DateNormalizer,
-  private readonly personNameNormalizer: PersonNameNormalizer,
-  private readonly gradeNormalizer: GradeNormalizer,
-  private readonly samplePatternService: SamplePatternService,
+    private readonly samplePatternService: SamplePatternService,
+    private readonly aiMappingService: AiMappingService,
   ) {}
 
   async upload(file: Express.Multer.File) {
@@ -46,162 +48,247 @@ export class ImportsService {
       );
     }
 
-    const sheets = await this.xlsxParser.parse(file.buffer);
+    const target: ImportTarget = 'STUDENT';
 
-    const mappedSheets = sheets.map((sheet) => {
-      const columns = sheet.columns.map((column) => {
-        const sampleValues = sheet.sampleRows
-          .map((row) => {
-            const cell = row.cells.find(
-              (item) =>
-                item.columnIndex === column.index,
-            );
+    const sheets = await this.xlsxParser.parse(
+      file.buffer,
+    );
 
-            return cell?.displayValue ?? '';
-          })
-          .filter((value) => value !== '');
+    const mappedSheets = await Promise.all(
+      sheets.map(async (sheet) => {
+        /*
+         * Build the input expected by the
+         * deterministic column mapper.
+         */
+        const columns = sheet.columns.map(
+          (column) => {
+            const sampleValues =
+              sheet.sampleRows
+                .map((row) => {
+                  const cell =
+                    row.cells.find(
+                      (item) =>
+                        item.columnIndex ===
+                        column.index,
+                    );
 
-        return {
-          index: column.index,
-          header: column.header,
-          sampleValues,
-        };
-      });
+                  return (
+                    cell?.displayValue ?? ''
+                  );
+                })
+                .filter(
+                  (value) => value !== '',
+                );
 
-      const suggestedMappings =
-        this.columnMapper.mapColumns(
-          'STUDENT',
-          columns,
+            return {
+              index: column.index,
+              header: column.header,
+              sampleValues,
+            };
+          },
         );
 
-      return {
-        ...sheet,
-        suggestedMappings,
-      };
-    });
+        /*
+         * First pass:
+         * deterministic mapping.
+         */
+        const suggestedMappings =
+          this.columnMapper.mapColumns(
+            target,
+            columns,
+          );
+
+        /*
+         * Prepare an AI request only for
+         * mappings that are ambiguous,
+         * uncertain, or unmapped.
+         */
+        const aiRequest =
+          this.buildAiMappingRequest(
+            target,
+            {
+              ...sheet,
+              suggestedMappings,
+            },
+          );
+
+        /*
+         * AI is optional.
+         *
+         * If nothing requires AI,
+         * no external request is made.
+         */
+        const aiResult: AiMappingResult =
+          aiRequest
+            ? await this.aiMappingService.suggestMappings(
+                aiRequest,
+              )
+            : {
+                suggestions: [],
+              };
+
+        /*
+         * AI suggestions are attached
+         * alongside deterministic results.
+         *
+         * They do NOT replace them.
+         */
+        const finalMappings =
+          this.mergeAiSuggestions(
+            suggestedMappings,
+            aiResult,
+          );
+
+        return {
+          ...sheet,
+          suggestedMappings: finalMappings,
+        };
+      }),
+    );
 
     return {
       fileName: file.originalname,
       fileSize: file.size,
-      target: 'STUDENT',
+      target,
       sheets: mappedSheets,
     };
   }
 
-  testNormalizers() {
-  return {
-    text: [
-      this.textNormalizer.normalize(
-        '   Talampas,   Bustos, Bulacan   ',
-      ),
-    ],
+  private buildAiMappingRequest(
+    target: ImportTarget,
+    sheet: {
+      columns: {
+        index: number;
+        header: string;
+      }[];
 
-    identifier: [
-      this.identifierNormalizer.normalize(
-        123457000000,
-      ),
+      sampleRows: {
+        rowNumber: number;
 
-      this.identifierNormalizer.normalize(
-        ' 123456789012 ',
-      ),
-    ],
+        cells: {
+          columnIndex: number;
+          header: string;
+          rawValue: unknown;
+          displayValue: string;
+        }[];
+      }[];
 
-    phone: [
-      this.phoneNormalizer.normalize(
-        '0919 555 0194',
-      ),
+      suggestedMappings:
+        ColumnMappingSuggestion[];
+    },
+  ): AiMappingRequest | null {
+    const schema = getImportSchema(target);
 
-      this.phoneNormalizer.normalize(
-        '+63 919 555 0194',
-      ),
+    /*
+     * Only send mappings that actually
+     * need additional assistance.
+     */
+    const needsAi =
+      sheet.suggestedMappings.filter(
+        (mapping) =>
+          mapping.ambiguous ||
+          mapping.requiresConfirmation ||
+          mapping.suggestedField === null,
+      );
 
-      this.phoneNormalizer.normalize(
-        9185550193,
-      ),
-    ],
+    if (needsAi.length === 0) {
+      return null;
+    }
 
-    date: [
-      this.dateNormalizer.normalize(
-        '2014-02-05T00:00:00.000Z',
-      ),
+    return {
+      target,
 
-      this.dateNormalizer.normalize(
-        41715,
-      ),
-
-      this.dateNormalizer.normalize(
-        'January 20, 2014',
-      ),
-    ],
-
-    grade: [
-      this.gradeNormalizer.normalize(6),
-      this.gradeNormalizer.normalize('G6'),
-      this.gradeNormalizer.normalize('Gr. 6'),
-      this.gradeNormalizer.normalize('VI'),
-      this.gradeNormalizer.normalize('Grade 6'),
-    ],
-
-    names: [
-      this.personNameNormalizer.normalize(
-        'SANTOS, ANA MARIE',
+      availableFields: schema.fields.map(
+        (field) => ({
+          key: field.key,
+          label: field.label,
+        }),
       ),
 
-      this.personNameNormalizer.normalize(
-        'REYES, MARK ANTHONY LUIS',
-      ),
+      columns: needsAi.map((mapping) => {
+        /*
+         * Raw values are accessed only
+         * inside our backend.
+         */
+        const rawSamples =
+          sheet.sampleRows
+            .map((row) =>
+              row.cells.find(
+                (cell) =>
+                  cell.columnIndex ===
+                  mapping.columnIndex,
+              ),
+            )
+            .filter(
+              (
+                cell,
+              ): cell is NonNullable<
+                typeof cell
+              > => Boolean(cell),
+            )
+            .map(
+              (cell) => cell.rawValue,
+            );
 
-      this.personNameNormalizer.normalize(
-        'GARCIA, LUIS TOMAS',
-      ),
-    ],
-  };
-}
+        /*
+         * Convert raw PII/data into
+         * structural descriptions BEFORE
+         * constructing the AI request.
+         */
+        const samplePatterns =
+          this.samplePatternService.describeMany(
+            rawSamples,
+          );
 
-testPatterns() {
-  return {
-    lrn: this.samplePatternService.describe(
-      '123456789012',
-    ),
+        return {
+          columnIndex:
+            mapping.columnIndex,
 
-    phone: this.samplePatternService.describe(
-      '09195550194',
-    ),
+          header:
+            mapping.header,
 
-    birthday:
-      this.samplePatternService.describe(
-        '2014-02-05',
-      ),
+          currentSuggestion:
+            mapping.suggestedField,
 
-    excelDate:
-      this.samplePatternService.describe(
-        41715,
-      ),
+          samplePatterns,
+        };
+      }),
+    };
+  }
 
-    name: this.samplePatternService.describe(
-      'SANTOS, ANA MARIE',
-    ),
+  private mergeAiSuggestions(
+    mappings: ColumnMappingSuggestion[],
+    aiResult: AiMappingResult,
+  ) {
+    return mappings.map((mapping) => {
+      const aiSuggestion =
+        aiResult.suggestions.find(
+          (suggestion) =>
+            suggestion.columnIndex ===
+            mapping.columnIndex,
+        );
 
-    shortLocation:
-      this.samplePatternService.describe(
-        'Pulilan, Bulacan',
-      ),
+      if (!aiSuggestion) {
+        return {
+          ...mapping,
+          aiSuggestion: null,
+        };
+      }
 
-    detailedAddress:
-      this.samplePatternService.describe(
-        'Purok 4, Longos, Pulilan, Bulacan',
-      ),
+      return {
+        ...mapping,
 
-    grade:
-      this.samplePatternService.describe(
-        'Gr. 6',
-      ),
+        aiSuggestion: {
+          suggestedField:
+            aiSuggestion.suggestedField,
 
-    status:
-      this.samplePatternService.describe(
-        'Transferee',
-      ),
-  };
-}
+          confidence:
+            aiSuggestion.confidence,
 
+          reason:
+            aiSuggestion.reason,
+        },
+      };
+    });
+  }
 }
