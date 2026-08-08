@@ -4,8 +4,10 @@ import {
   Get,
   Param,
   Post,
+  Query,
 } from '@nestjs/common';
 import { CreateStudentDto } from './dto/create-student.dto';
+import { StudentQueryDto } from './dto/student-query.dto';
 import { StudentsService } from './students.service';
 
 @Controller('students')
@@ -15,8 +17,8 @@ export class StudentsController {
   ) {}
 
   @Get()
-  findAll() {
-    return this.studentsService.findAll();
+  findAll(@Query() query: StudentQueryDto) {
+    return this.studentsService.findAll(query);
   }
 
   @Get(':id')

@@ -67,3 +67,4 @@ export class CreateStudentDto {
   @IsUUID()
   schoolYearId!: string;
 }
+

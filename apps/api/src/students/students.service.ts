@@ -7,6 +7,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { SectionsRepository } from '../sections/sections.repository';
 import { SchoolYearsRepository } from '../school-years/school-years.repository';
 import { CreateStudentDto } from './dto/create-student.dto';
+import { StudentQueryDto } from './dto/student-query.dto';
 import { StudentsRepository } from './students.repository';
 
 @Injectable()
@@ -18,9 +19,9 @@ export class StudentsService {
     private readonly prisma: PrismaService,
   ) {}
 
-  findAll() {
-    return this.studentsRepository.findAll();
-  }
+    findAll(query: StudentQueryDto) {
+    return this.studentsRepository.findAll(query);
+    }
 
   async findById(id: string) {
     const student = await this.studentsRepository.findById(id);
