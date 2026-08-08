@@ -27,4 +27,9 @@ export class ImportsController {
   testNormalizers() {
   return this.importsService.testNormalizers();
 }
+
+@Get('test-patterns')
+testPatterns() {
+  return this.importsService.testPatterns();
+}
 }

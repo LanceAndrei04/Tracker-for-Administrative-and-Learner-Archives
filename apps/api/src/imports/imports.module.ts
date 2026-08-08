@@ -14,6 +14,10 @@ import { DateNormalizer } from './normalization/normalizers/date.normalizer';
 import { PersonNameNormalizer } from './normalization/normalizers/person-name.normalizer';
 import { GradeNormalizer } from './normalization/normalizers/grade.normalizer';
 
+import { AiMappingService } from './ai/ai-mapping.service';
+import { SamplePatternService } from './ai/sample-pattern.service';
+import { AiPrivacyGuard } from './ai/ai-privacy.guard';
+
 @Module({
   controllers: [ImportsController],
 
@@ -31,6 +35,10 @@ import { GradeNormalizer } from './normalization/normalizers/grade.normalizer';
     DateNormalizer,
     PersonNameNormalizer,
     GradeNormalizer,
+
+    AiMappingService,
+    SamplePatternService,
+    AiPrivacyGuard,
   ],
 })
 export class ImportsModule {}

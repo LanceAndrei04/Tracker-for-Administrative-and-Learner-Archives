@@ -11,6 +11,7 @@ import { PhoneNormalizer } from './normalization/normalizers/phone.normalizer';
 import { DateNormalizer } from './normalization/normalizers/date.normalizer';
 import { PersonNameNormalizer } from './normalization/normalizers/person-name.normalizer';
 import { GradeNormalizer } from './normalization/normalizers/grade.normalizer';
+import { SamplePatternService } from './ai/sample-pattern.service';
 
 @Injectable()
 export class ImportsService {
@@ -24,6 +25,7 @@ export class ImportsService {
   private readonly dateNormalizer: DateNormalizer,
   private readonly personNameNormalizer: PersonNameNormalizer,
   private readonly gradeNormalizer: GradeNormalizer,
+  private readonly samplePatternService: SamplePatternService,
   ) {}
 
   async upload(file: Express.Multer.File) {
@@ -155,4 +157,51 @@ export class ImportsService {
     ],
   };
 }
+
+testPatterns() {
+  return {
+    lrn: this.samplePatternService.describe(
+      '123456789012',
+    ),
+
+    phone: this.samplePatternService.describe(
+      '09195550194',
+    ),
+
+    birthday:
+      this.samplePatternService.describe(
+        '2014-02-05',
+      ),
+
+    excelDate:
+      this.samplePatternService.describe(
+        41715,
+      ),
+
+    name: this.samplePatternService.describe(
+      'SANTOS, ANA MARIE',
+    ),
+
+    shortLocation:
+      this.samplePatternService.describe(
+        'Pulilan, Bulacan',
+      ),
+
+    detailedAddress:
+      this.samplePatternService.describe(
+        'Purok 4, Longos, Pulilan, Bulacan',
+      ),
+
+    grade:
+      this.samplePatternService.describe(
+        'Gr. 6',
+      ),
+
+    status:
+      this.samplePatternService.describe(
+        'Transferee',
+      ),
+  };
+}
+
 }
