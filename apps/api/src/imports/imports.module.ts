@@ -20,6 +20,8 @@ import { AiMappingService } from './ai/ai-mapping.service';
 import { SamplePatternService } from './ai/sample-pattern.service';
 import { AiPrivacyGuard } from './ai/ai-privacy.guard';
 
+import {ImportFileStorageService} from './storage/import-file-storage.service';
+
 @Module({
   controllers: [ImportsController],
 
@@ -42,6 +44,8 @@ import { AiPrivacyGuard } from './ai/ai-privacy.guard';
     AiMappingService,
     SamplePatternService,
     AiPrivacyGuard,
+
+    ImportFileStorageService,
   ],
 })
 export class ImportsModule {}

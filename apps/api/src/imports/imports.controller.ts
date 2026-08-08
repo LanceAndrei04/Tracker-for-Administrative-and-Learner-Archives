@@ -1,12 +1,13 @@
 import {
+  Body,
   Controller,
+  Param,
   Post,
-  Get,
   UploadedFile,
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
-import type { Express } from 'express';
+
 import { ImportsService } from './imports.service';
 
 @Controller('imports')
@@ -23,4 +24,20 @@ export class ImportsController {
     return this.importsService.upload(file);
   }
 
+@Post(':id/preview')
+preview(
+  @Param('id') id: string,
+  @Body() body: {
+    sheetName: string;
+    mappings: {
+      columnIndex: number;
+      targetField: string;
+    }[];
+  },
+) {
+  return this.importsService.preview(
+    id,
+    body,
+  );
+}
 }

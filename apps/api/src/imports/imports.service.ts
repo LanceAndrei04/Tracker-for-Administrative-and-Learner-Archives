@@ -18,6 +18,8 @@ import type {
 import { SamplePatternService } from './ai/sample-pattern.service';
 import { AiMappingService } from './ai/ai-mapping.service';
 
+import { ImportFileStorageService } from './storage/import-file-storage.service';
+
 import type {
   AiMappingRequest,
   AiMappingResult,
@@ -31,6 +33,7 @@ export class ImportsService {
     private readonly samplePatternService: SamplePatternService,
     private readonly aiMappingService: AiMappingService,
     private readonly importsRepository: ImportsRepository,
+    private readonly importFileStorageService: ImportFileStorageService,
   ) {}
 
   async upload(file: Express.Multer.File) {
@@ -57,7 +60,6 @@ export class ImportsService {
       file.buffer,
     );
 
-    const primarySheet = sheets[0];
 
     const importJob =
     await this.importsRepository.createJob({
@@ -66,6 +68,11 @@ export class ImportsService {
           fileType: extension,
           fileSize: file.size,
         });
+
+    await this.importFileStorageService.save(
+          importJob.id,
+          file.buffer,
+        );
 
     const mappedSheets = await Promise.all(
       sheets.map(async (sheet) => {
@@ -168,6 +175,59 @@ export class ImportsService {
     };
   }
 
+  async preview(
+  importJobId: string,
+  input: {
+    sheetName: string;
+
+    mappings: {
+      columnIndex: number;
+      targetField: string;
+    }[];
+  },
+) {
+  const importJob =
+    await this.importsRepository.findJobById(
+      importJobId,
+    );
+
+  if (!importJob) {
+    throw new BadRequestException(
+      'Import job was not found.',
+    );
+  }
+
+  const fileBuffer =
+    await this.importFileStorageService.get(
+      importJobId,
+    );
+
+  const sheets =
+    await this.xlsxParser.parse(
+      fileBuffer,
+    );
+
+  const sheet = sheets.find(
+    (item) =>
+      item.name === input.sheetName,
+  );
+
+  if (!sheet) {
+    throw new BadRequestException(
+      `Sheet "${input.sheetName}" was not found.`,
+    );
+  }
+
+  return {
+    importJobId,
+    sheetName: sheet.name,
+    mappings: input.mappings,
+    rowCount: Math.max(
+      sheet.rowCount - 1,
+      0,
+    ),
+  };
+}
   private buildAiMappingRequest(
     target: ImportTarget,
     sheet: {
@@ -314,4 +374,6 @@ export class ImportsService {
     };
   });
 }
+
+
 }

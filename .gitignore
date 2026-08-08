@@ -12,3 +12,7 @@ coverage/
 
 .DS_Store
 Thumbs.db
+
+# Temporary import files
+apps/api/uploads/
+uploads/
