@@ -11,5 +11,6 @@ import { SchoolYearsService } from './school-years.service';
     SchoolYearsService,
     SchoolYearsRepository,
   ],
+  exports: [SchoolYearsRepository],
 })
 export class SchoolYearsModule {}

@@ -5,8 +5,8 @@
 // Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
 
 generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
   moduleFormat = "cjs"
 }
 
@@ -21,6 +21,8 @@ model SchoolYear {
   isActive  Boolean  @default(false)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  sections Section[]
 }
 
 model Grade {
@@ -29,4 +31,23 @@ model Grade {
   level     Int      @unique
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  sections Section[]
+}
+
+model Section {
+  id           String @id @default(uuid())
+  name         String
+  gradeId      String
+  schoolYearId String
+
+  grade      Grade      @relation(fields: [gradeId], references: [id])
+  schoolYear SchoolYear @relation(fields: [schoolYearId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([name, gradeId, schoolYearId])
+  @@index([gradeId])
+  @@index([schoolYearId])
 }
