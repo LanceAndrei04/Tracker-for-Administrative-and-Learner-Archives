@@ -1,6 +1,8 @@
 import { Module } from '@nestjs/common';
 import { ImportsController } from './imports.controller';
 import { ImportsService } from './imports.service';
+import { ImportsRepository } from './imports.repository';
+
 
 import { XlsxParser } from './parsers/xlsx.parser';
 import { ColumnMapperService } from './mapping/column-mapper.service';
@@ -23,6 +25,7 @@ import { AiPrivacyGuard } from './ai/ai-privacy.guard';
 
   providers: [
     ImportsService,
+    ImportsRepository,
 
     XlsxParser,
     ColumnMapperService,

@@ -5,6 +5,8 @@ import {
 
 import { XlsxParser } from './parsers/xlsx.parser';
 
+import {ImportsRepository} from './imports.repository';
+
 import { ColumnMapperService } from './mapping/column-mapper.service';
 import { getImportSchema } from './mapping/mapping-registry';
 
@@ -28,6 +30,7 @@ export class ImportsService {
     private readonly columnMapper: ColumnMapperService,
     private readonly samplePatternService: SamplePatternService,
     private readonly aiMappingService: AiMappingService,
+    private readonly importsRepository: ImportsRepository,
   ) {}
 
   async upload(file: Express.Multer.File) {
@@ -53,6 +56,16 @@ export class ImportsService {
     const sheets = await this.xlsxParser.parse(
       file.buffer,
     );
+
+    const primarySheet = sheets[0];
+
+    const importJob =
+    await this.importsRepository.createJob({
+          target,
+          fileName: file.originalname,
+          fileType: extension,
+          fileSize: file.size,
+        });
 
     const mappedSheets = await Promise.all(
       sheets.map(async (sheet) => {
@@ -147,6 +160,7 @@ export class ImportsService {
     );
 
     return {
+      importJobId: importJob.id,
       fileName: file.originalname,
       fileSize: file.size,
       target,

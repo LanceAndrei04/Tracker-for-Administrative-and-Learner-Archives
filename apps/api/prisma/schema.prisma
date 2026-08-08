@@ -109,18 +109,17 @@ model Enrollment {
 model ImportJob {
   id String @id @default(uuid())
 
-  target String 
+  target String
 
   fileName  String
   fileType  String
+  fileSize  Int?
   sheetName String?
 
   schoolYearId String?
   schoolYear   SchoolYear? @relation(fields: [schoolYearId], references: [id])
 
   status String @default("UPLOADED")
-
-  issues ImportIssue[]
 
   mappingConfig       Json?
   normalizationConfig Json?
@@ -131,17 +130,25 @@ model ImportJob {
   errorRows    Int @default(0)
   importedRows Int @default(0)
 
+  issues ImportIssue[]
+
   createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   completedAt DateTime?
+
+  @@index([target])
+  @@index([status])
+  @@index([schoolYearId])
 }
 
 model ImportIssue {
-  id          String @id @default(uuid())
+  id String @id @default(uuid())
+
   importJobId String
+  importJob   ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
 
-  importJob ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+  rowNumber Int
 
-  rowNumber    Int
   sourceColumn String?
   targetField  String?
 
@@ -155,4 +162,8 @@ model ImportIssue {
   resolved Boolean @default(false)
 
   createdAt DateTime @default(now())
+
+  @@index([importJobId])
+  @@index([severity])
+  @@index([resolved])
 }
