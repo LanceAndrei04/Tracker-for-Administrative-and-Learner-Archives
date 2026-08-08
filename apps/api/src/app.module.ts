@@ -6,6 +6,7 @@ import { GradesModule } from './grades/grades.module';
 import { SectionsModule } from './sections/sections.module';
 import { StudentsModule } from './students/students.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
+import { ImportsModule } from './imports/imports.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { EnrollmentsModule } from './enrollments/enrollments.module';
     SectionsModule,
     StudentsModule,
     EnrollmentsModule,
+    ImportsModule,
   ],
 })
 export class AppModule {}

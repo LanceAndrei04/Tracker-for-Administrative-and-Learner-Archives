@@ -22,6 +22,7 @@ model SchoolYear {
 
   sections    Section[]
   enrollments Enrollment[]
+  importJobs  ImportJob[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -103,4 +104,55 @@ model Enrollment {
   @@unique([studentId, schoolYearId])
   @@index([sectionId])
   @@index([schoolYearId])
+}
+
+model ImportJob {
+  id String @id @default(uuid())
+
+  target String 
+
+  fileName  String
+  fileType  String
+  sheetName String?
+
+  schoolYearId String?
+  schoolYear   SchoolYear? @relation(fields: [schoolYearId], references: [id])
+
+  status String @default("UPLOADED")
+
+  issues ImportIssue[]
+
+  mappingConfig       Json?
+  normalizationConfig Json?
+
+  totalRows    Int @default(0)
+  validRows    Int @default(0)
+  warningRows  Int @default(0)
+  errorRows    Int @default(0)
+  importedRows Int @default(0)
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+}
+
+model ImportIssue {
+  id          String @id @default(uuid())
+  importJobId String
+
+  importJob ImportJob @relation(fields: [importJobId], references: [id], onDelete: Cascade)
+
+  rowNumber    Int
+  sourceColumn String?
+  targetField  String?
+
+  severity String
+  code     String
+  message  String
+
+  originalValue   String?
+  normalizedValue String?
+
+  resolved Boolean @default(false)
+
+  createdAt DateTime @default(now())
 }
