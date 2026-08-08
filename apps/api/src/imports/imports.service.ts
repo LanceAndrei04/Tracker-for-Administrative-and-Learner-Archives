@@ -5,7 +5,7 @@ import {
 
 import { XlsxParser } from './parsers/xlsx.parser';
 
-import {ImportsRepository} from './imports.repository';
+import { ImportsRepository } from './imports.repository';
 
 import { ColumnMapperService } from './mapping/column-mapper.service';
 import { getImportSchema } from './mapping/mapping-registry';
@@ -19,6 +19,8 @@ import { SamplePatternService } from './ai/sample-pattern.service';
 import { AiMappingService } from './ai/ai-mapping.service';
 
 import { ImportFileStorageService } from './storage/import-file-storage.service';
+
+import { NormalizationService } from './normalization/normalization.service';
 
 import type {
   AiMappingRequest,
@@ -34,6 +36,7 @@ export class ImportsService {
     private readonly aiMappingService: AiMappingService,
     private readonly importsRepository: ImportsRepository,
     private readonly importFileStorageService: ImportFileStorageService,
+    private readonly normalizationService: NormalizationService,
   ) {}
 
   async upload(file: Express.Multer.File) {
@@ -60,37 +63,31 @@ export class ImportsService {
       file.buffer,
     );
 
-
     const importJob =
-    await this.importsRepository.createJob({
-          target,
-          fileName: file.originalname,
-          fileType: extension,
-          fileSize: file.size,
-        });
+      await this.importsRepository.createJob({
+        target,
+        fileName: file.originalname,
+        fileType: extension,
+        fileSize: file.size,
+      });
 
     await this.importFileStorageService.save(
-          importJob.id,
-          file.buffer,
-        );
+      importJob.id,
+      file.buffer,
+    );
 
     const mappedSheets = await Promise.all(
       sheets.map(async (sheet) => {
-        /*
-         * Build the input expected by the
-         * deterministic column mapper.
-         */
         const columns = sheet.columns.map(
           (column) => {
             const sampleValues =
               sheet.sampleRows
                 .map((row) => {
-                  const cell =
-                    row.cells.find(
-                      (item) =>
-                        item.columnIndex ===
-                        column.index,
-                    );
+                  const cell = row.cells.find(
+                    (item) =>
+                      item.columnIndex ===
+                      column.index,
+                  );
 
                   return (
                     cell?.displayValue ?? ''
@@ -119,9 +116,8 @@ export class ImportsService {
           );
 
         /*
-         * Prepare an AI request only for
-         * mappings that are ambiguous,
-         * uncertain, or unmapped.
+         * Only ambiguous / uncertain columns
+         * are prepared for AI.
          */
         const aiRequest =
           this.buildAiMappingRequest(
@@ -134,9 +130,7 @@ export class ImportsService {
 
         /*
          * AI is optional.
-         *
-         * If nothing requires AI,
-         * no external request is made.
+         * Failure returns an empty suggestion list.
          */
         const aiResult: AiMappingResult =
           aiRequest
@@ -147,12 +141,6 @@ export class ImportsService {
                 suggestions: [],
               };
 
-        /*
-         * AI suggestions are attached
-         * alongside deterministic results.
-         *
-         * They do NOT replace them.
-         */
         const finalMappings =
           this.mergeAiSuggestions(
             suggestedMappings,
@@ -161,7 +149,8 @@ export class ImportsService {
 
         return {
           ...sheet,
-          suggestedMappings: finalMappings,
+          suggestedMappings:
+            finalMappings,
         };
       }),
     );
@@ -176,58 +165,160 @@ export class ImportsService {
   }
 
   async preview(
-  importJobId: string,
-  input: {
-    sheetName: string;
+    importJobId: string,
+    input: {
+      sheetName: string;
 
-    mappings: {
-      columnIndex: number;
-      targetField: string;
-    }[];
-  },
-) {
-  const importJob =
-    await this.importsRepository.findJobById(
+      mappings: {
+        columnIndex: number;
+        targetField: string;
+      }[];
+    },
+  ) {
+    if (!input) {
+      throw new BadRequestException(
+        'Preview request body is required.',
+      );
+    }
+
+    if (!input.sheetName) {
+      throw new BadRequestException(
+        'sheetName is required.',
+      );
+    }
+
+    if (
+      !Array.isArray(input.mappings) ||
+      input.mappings.length === 0
+    ) {
+      throw new BadRequestException(
+        'At least one column mapping is required.',
+      );
+    }
+
+    const importJob =
+      await this.importsRepository.findJobById(
+        importJobId,
+      );
+
+    if (!importJob) {
+      throw new BadRequestException(
+        'Import job was not found.',
+      );
+    }
+
+    const fileBuffer =
+      await this.importFileStorageService.get(
+        importJobId,
+      );
+
+    const sheets =
+      await this.xlsxParser.parse(
+        fileBuffer,
+      );
+
+    const sheet = sheets.find(
+      (item) =>
+        item.name === input.sheetName,
+    );
+
+    if (!sheet) {
+      throw new BadRequestException(
+        `Sheet "${input.sheetName}" was not found.`,
+      );
+    }
+
+    /*
+     * Convert confirmed source-column mappings
+     * into the generic format expected by the
+     * normalization layer.
+     */
+    const mappedRows =
+      sheet.sampleRows.map((row) => {
+        const cells = input.mappings
+          .map((mapping) => {
+            const sourceCell =
+              row.cells.find(
+                (cell) =>
+                  cell.columnIndex ===
+                  mapping.columnIndex,
+              );
+
+            if (!sourceCell) {
+              return null;
+            }
+
+            return {
+              columnIndex:
+                mapping.columnIndex,
+
+              header:
+                sourceCell.header,
+
+              targetField:
+                mapping.targetField,
+
+              rawValue:
+                sourceCell.rawValue,
+
+              displayValue:
+                sourceCell.displayValue,
+            };
+          })
+          .filter(
+            (
+              cell,
+            ): cell is NonNullable<
+              typeof cell
+            > => cell !== null,
+          );
+
+        return {
+          rowNumber: row.rowNumber,
+          cells,
+        };
+      });
+
+    const target =
+      importJob.target as ImportTarget;
+
+    const normalizedRows =
+      this.normalizationService.normalizeRows(
+        target,
+        mappedRows,
+      );
+
+    /*
+     * Save the user's confirmed mapping.
+     *
+     * This mapping becomes authoritative.
+     * AI suggestions are no longer relevant
+     * once the user confirms the fields.
+     */
+    await this.importsRepository.updateMapping(
       importJobId,
+      {
+        sheetName: input.sheetName,
+        mappings: input.mappings,
+      },
     );
 
-  if (!importJob) {
-    throw new BadRequestException(
-      'Import job was not found.',
-    );
+    return {
+      importJobId,
+      target,
+      sheetName: sheet.name,
+
+      rowCount: Math.max(
+        sheet.rowCount - 1,
+        0,
+      ),
+
+      mappings: input.mappings,
+
+      normalizedRows,
+    };
   }
 
-  const fileBuffer =
-    await this.importFileStorageService.get(
-      importJobId,
-    );
-
-  const sheets =
-    await this.xlsxParser.parse(
-      fileBuffer,
-    );
-
-  const sheet = sheets.find(
-    (item) =>
-      item.name === input.sheetName,
-  );
-
-  if (!sheet) {
-    throw new BadRequestException(
-      `Sheet "${input.sheetName}" was not found.`,
-    );
-  }
-
-  return {
-    importJobId,
-    sheetName: sheet.name,
-    mappings: input.mappings,
-    rowCount: Math.max(
-      sheet.rowCount - 1,
-      0,
-    ),
-  };
-}
   private buildAiMappingRequest(
     target: ImportTarget,
     sheet: {
@@ -251,12 +342,9 @@ export class ImportsService {
         ColumnMappingSuggestion[];
     },
   ): AiMappingRequest | null {
-    const schema = getImportSchema(target);
+    const schema =
+      getImportSchema(target);
 
-    /*
-     * Only send mappings that actually
-     * need additional assistance.
-     */
     const needsAi =
       sheet.suggestedMappings.filter(
         (mapping) =>
@@ -272,108 +360,108 @@ export class ImportsService {
     return {
       target,
 
-      availableFields: schema.fields.map(
-        (field) => ({
+      availableFields:
+        schema.fields.map((field) => ({
           key: field.key,
           label: field.label,
-        }),
-      ),
+        })),
 
-      columns: needsAi.map((mapping) => {
-        /*
-         * Raw values are accessed only
-         * inside our backend.
-         */
-        const rawSamples =
-          sheet.sampleRows
-            .map((row) =>
-              row.cells.find(
+      columns: needsAi.map(
+        (mapping) => {
+          /*
+           * Raw values stay inside the backend.
+           * They are immediately transformed into
+           * non-PII structural patterns.
+           */
+          const rawSamples =
+            sheet.sampleRows
+              .map((row) =>
+                row.cells.find(
+                  (cell) =>
+                    cell.columnIndex ===
+                    mapping.columnIndex,
+                ),
+              )
+              .filter(
+                (
+                  cell,
+                ): cell is NonNullable<
+                  typeof cell
+                > => Boolean(cell),
+              )
+              .map(
                 (cell) =>
-                  cell.columnIndex ===
-                  mapping.columnIndex,
-              ),
-            )
-            .filter(
-              (
-                cell,
-              ): cell is NonNullable<
-                typeof cell
-              > => Boolean(cell),
-            )
-            .map(
-              (cell) => cell.rawValue,
+                  cell.rawValue,
+              );
+
+          const samplePatterns =
+            this.samplePatternService.describeMany(
+              rawSamples,
             );
 
-        /*
-         * Convert raw PII/data into
-         * structural descriptions BEFORE
-         * constructing the AI request.
-         */
-        const samplePatterns =
-          this.samplePatternService.describeMany(
-            rawSamples,
-          );
+          return {
+            columnIndex:
+              mapping.columnIndex,
 
-        return {
-          columnIndex:
-            mapping.columnIndex,
+            header:
+              mapping.header,
 
-          header:
-            mapping.header,
+            currentSuggestion:
+              mapping.suggestedField,
 
-          currentSuggestion:
-            mapping.suggestedField,
-
-          samplePatterns,
-        };
-      }),
+            samplePatterns,
+          };
+        },
+      ),
     };
   }
 
- private mergeAiSuggestions(
-  mappings: ColumnMappingSuggestion[],
-  aiResult: AiMappingResult,
-) {
-  return mappings.map((mapping) => {
-    const aiSuggestion =
-      aiResult.suggestions.find(
-        (suggestion) =>
-          suggestion.columnIndex ===
-          mapping.columnIndex,
-      );
+  private mergeAiSuggestions(
+    mappings:
+      ColumnMappingSuggestion[],
+    aiResult: AiMappingResult,
+  ) {
+    return mappings.map(
+      (mapping) => {
+        const aiSuggestion =
+          aiResult.suggestions.find(
+            (suggestion) =>
+              suggestion.columnIndex ===
+              mapping.columnIndex,
+          );
 
-    if (!aiSuggestion) {
-      return {
-        ...mapping,
-        aiSuggestion: null,
+        if (!aiSuggestion) {
+          return {
+            ...mapping,
 
-        reviewRequired:
-          mapping.requiresConfirmation ||
-          mapping.ambiguous,
-      };
-    }
+            aiSuggestion: null,
 
-    return {
-      ...mapping,
+            reviewRequired:
+              mapping.requiresConfirmation ||
+              mapping.ambiguous,
+          };
+        }
 
-      aiSuggestion: {
-        suggestedField:
-          aiSuggestion.suggestedField,
+        return {
+          ...mapping,
 
-        confidence:
-          aiSuggestion.confidence,
+          aiSuggestion: {
+            suggestedField:
+              aiSuggestion.suggestedField,
 
-        reason:
-          aiSuggestion.reason,
+            confidence:
+              aiSuggestion.confidence,
+
+            reason:
+              aiSuggestion.reason,
+          },
+
+          reviewRequired:
+            mapping.requiresConfirmation ||
+            mapping.ambiguous ||
+            aiSuggestion.confidence < 0.9,
+        };
       },
-
-      reviewRequired:
-        mapping.requiresConfirmation ||
-        mapping.ambiguous ||
-        aiSuggestion.confidence < 0.9,
-    };
-  });
-}
-
-
+    );
+  }
 }
