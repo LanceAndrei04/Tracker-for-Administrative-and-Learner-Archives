@@ -1,0 +1,17 @@
+{
+  "name": "tala",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:web": "npm run dev -w web",
+    "dev:api": "npm run start:dev -w api"
+  },
+  "dependencies": {
+    "@nestjs/config": "^4.0.4",
+    "@prisma/adapter-pg": "^7.9.1",
+    "pg": "^8.22.0"
+  }
+}
