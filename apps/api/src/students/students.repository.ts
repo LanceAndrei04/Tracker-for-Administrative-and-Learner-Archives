@@ -141,4 +141,29 @@ export class StudentsRepository {
       },
     };
   }
+
+  update(
+  id: string,
+  data: {
+    lrn?: string;
+    firstName?: string;
+    middleName?: string;
+    lastName?: string;
+    suffix?: string;
+    birthday?: Date;
+    birthplace?: string;
+    address?: string;
+    fatherName?: string;
+    motherName?: string;
+    guardianName?: string;
+    contactNumber?: string;
+    remarks?: string;
+  },
+) {
+  return this.prisma.student.update({
+    where: { id },
+    data,
+  });
+}
+
 }

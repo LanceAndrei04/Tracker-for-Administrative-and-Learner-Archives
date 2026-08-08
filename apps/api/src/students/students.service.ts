@@ -8,6 +8,7 @@ import { SectionsRepository } from '../sections/sections.repository';
 import { SchoolYearsRepository } from '../school-years/school-years.repository';
 import { CreateStudentDto } from './dto/create-student.dto';
 import { StudentQueryDto } from './dto/student-query.dto';
+import { UpdateStudentDto } from './dto/update-student.dto';
 import { StudentsRepository } from './students.repository';
 
 @Injectable()
@@ -108,4 +109,28 @@ export class StudentsService {
       };
     });
   }
+  async update(id: string, dto: UpdateStudentDto) {
+  const student = await this.studentsRepository.findById(id);
+
+  if (!student) {
+    throw new NotFoundException('Student not found.');
+  }
+
+  if (dto.lrn && dto.lrn !== student.lrn) {
+    const existing = await this.studentsRepository.findByLrn(dto.lrn);
+
+    if (existing) {
+      throw new ConflictException(
+        'A student with this LRN already exists.',
+      );
+    }
+  }
+
+  return this.studentsRepository.update(id, {
+    ...dto,
+    birthday: dto.birthday
+      ? new Date(dto.birthday)
+      : undefined,
+  });
+}
 }
