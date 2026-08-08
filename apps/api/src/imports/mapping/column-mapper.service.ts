@@ -14,7 +14,7 @@ export class ColumnMapperService {
   ): ColumnMappingSuggestion[] {
     const schema = getImportSchema(target);
 
-    return columns.map((column) => {
+    const suggestions = columns.map((column) => {
       const normalizedHeader =
         this.normalizeHeader(column.header);
 
@@ -38,14 +38,67 @@ export class ColumnMapperService {
         }
       }
 
+      const suggestedField =
+        bestScore >= 0.6 ? bestField : null;
+
       return {
         columnIndex: column.index,
         header: column.header,
-        suggestedField:
-          bestScore >= 0.6 ? bestField : null,
+        suggestedField,
         confidence: Number(bestScore.toFixed(2)),
         requiresConfirmation: bestScore < 0.9,
-      };
+        ambiguous: false,
+        reason:
+              suggestedField === null
+            ? 'No sufficiently confident mapping was found.'
+            : bestScore < 0.9
+              ? 'Mapping confidence is below the automatic acceptance threshold.'
+              : undefined,
+              };
+    });
+
+    return this.detectConflicts(suggestions);
+  }
+
+  private detectConflicts(
+    suggestions: ColumnMappingSuggestion[],
+  ): ColumnMappingSuggestion[] {
+    const fieldCounts = new Map<string, number>();
+
+    for (const suggestion of suggestions) {
+      if (!suggestion.suggestedField) {
+        continue;
+      }
+
+      fieldCounts.set(
+        suggestion.suggestedField,
+        (fieldCounts.get(
+          suggestion.suggestedField,
+        ) ?? 0) + 1,
+      );
+    }
+
+    return suggestions.map((suggestion) => {
+      if (!suggestion.suggestedField) {
+        return suggestion;
+      }
+
+      const count =
+        fieldCounts.get(
+          suggestion.suggestedField,
+        ) ?? 0;
+
+      if (count > 1) {
+        return {
+          ...suggestion,
+          ambiguous: true,
+          requiresConfirmation: true,
+          reason:
+            `Multiple source columns were mapped to "${suggestion.suggestedField}".`,
+        };
+      }
+
+      return suggestion;
     });
   }
 
@@ -72,11 +125,18 @@ export class ColumnMapperService {
       return 0.8;
     }
 
-    const headerWords = new Set(header.split(' '));
-    const aliasWords = new Set(alias.split(' '));
+    const headerWords = new Set(
+      header.split(' '),
+    );
 
-    const intersection = [...headerWords].filter(
-      (word) => aliasWords.has(word),
+    const aliasWords = new Set(
+      alias.split(' '),
+    );
+
+    const intersection = [
+      ...headerWords,
+    ].filter((word) =>
+      aliasWords.has(word),
     );
 
     const union = new Set([
@@ -88,6 +148,9 @@ export class ColumnMapperService {
       return 0;
     }
 
-    return intersection.length / union.size;
+    return (
+      intersection.length /
+      union.size
+    );
   }
 }

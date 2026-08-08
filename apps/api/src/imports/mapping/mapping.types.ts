@@ -30,7 +30,14 @@ export type ColumnInput = {
 export type ColumnMappingSuggestion = {
   columnIndex: number;
   header: string;
+
   suggestedField: string | null;
+
   confidence: number;
+
   requiresConfirmation: boolean;
+
+  ambiguous: boolean;
+
+  reason?: string;
 };
