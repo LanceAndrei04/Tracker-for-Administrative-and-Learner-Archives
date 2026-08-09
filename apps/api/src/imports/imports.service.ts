@@ -22,6 +22,8 @@ import { ImportFileStorageService } from './storage/import-file-storage.service'
 
 import { NormalizationService } from './normalization/normalization.service';
 
+import { StudentImportPersistenceService } from './persistence/student-import-persistence.service';
+
 import type {
   AiMappingRequest,
   AiMappingResult,
@@ -41,6 +43,7 @@ export class ImportsService {
     private readonly importFileStorageService: ImportFileStorageService,
     private readonly normalizationService: NormalizationService,
     private readonly importValidationService: ImportValidationService,
+    private readonly studentImportPersistenceService: StudentImportPersistenceService,
   ) {}
 
   async upload(file: Express.Multer.File) {
@@ -320,6 +323,252 @@ export class ImportsService {
 
       rows: validation.rows,
     };
+}
+
+
+
+async confirm(
+  importJobId: string,
+  input: {
+    schoolYearId: string;
+    sectionId: string;
+  },
+) {
+  if (!input) {
+    throw new BadRequestException(
+      'Confirm import request body is required.',
+    );
+  }
+
+  if (!input.schoolYearId) {
+    throw new BadRequestException(
+      'schoolYearId is required.',
+    );
+  }
+
+  if (!input.sectionId) {
+    throw new BadRequestException(
+      'sectionId is required.',
+    );
+  }
+
+  const importJob =
+    await this.importsRepository.findJobById(
+      importJobId,
+    );
+
+  if (!importJob) {
+    throw new BadRequestException(
+      'Import job was not found.',
+    );
+  }
+
+  if (
+    importJob.status ===
+    'COMPLETED'
+  ) {
+    throw new BadRequestException(
+      'This import job has already been completed.',
+    );
+  }
+
+  if (!importJob.mappingConfig) {
+    throw new BadRequestException(
+      'This import has no confirmed column mapping.',
+    );
+  }
+
+  const mappingConfig =
+    importJob.mappingConfig as unknown as {
+      sheetName: string;
+
+      mappings: {
+        columnIndex: number;
+        targetField: string;
+      }[];
+    };
+
+  if (
+    !mappingConfig.sheetName ||
+    !Array.isArray(
+      mappingConfig.mappings,
+    )
+  ) {
+    throw new BadRequestException(
+      'Saved import mapping is invalid.',
+    );
+  }
+
+  const fileBuffer =
+    await this.importFileStorageService.get(
+      importJobId,
+    );
+
+  /*
+   * Important:
+   * Confirmation does NOT trust preview output
+   * sent back by the frontend.
+   *
+   * We rebuild everything from the stored file
+   * and confirmed server-side mapping.
+   */
+  const allRows =
+    await this.xlsxParser.parseSheetRows(
+      fileBuffer,
+      mappingConfig.sheetName,
+    );
+
+  const mappedRows =
+    allRows.map((row) => {
+      const cells =
+        mappingConfig.mappings
+          .map((mapping) => {
+            const sourceCell =
+              row.cells.find(
+                (cell) =>
+                  cell.columnIndex ===
+                  mapping.columnIndex,
+              );
+
+            if (!sourceCell) {
+              return null;
+            }
+
+            return {
+              columnIndex:
+                mapping.columnIndex,
+
+              header:
+                sourceCell.header,
+
+              targetField:
+                mapping.targetField,
+
+              rawValue:
+                sourceCell.rawValue,
+
+              displayValue:
+                sourceCell.displayValue,
+            };
+          })
+          .filter(
+            (
+              cell,
+            ): cell is NonNullable<
+              typeof cell
+            > => cell !== null,
+          );
+
+      return {
+        rowNumber:
+          row.rowNumber,
+
+        cells,
+      };
+    });
+
+  const target =
+    importJob.target as ImportTarget;
+
+  if (target !== 'STUDENT') {
+    throw new BadRequestException(
+      `Import confirmation for target "${target}" is not implemented yet.`,
+    );
+  }
+
+  const normalizedRows =
+    this.normalizationService.normalizeRows(
+      target,
+      mappedRows,
+    );
+
+  /*
+   * Always validate again on confirmation.
+   *
+   * Never trust a preview that may have
+   * happened several minutes earlier.
+   */
+  const validation =
+    await this.importValidationService.validate(
+      target,
+      normalizedRows,
+    );
+
+  if (
+    validation.summary.errorRows > 0
+  ) {
+    throw new BadRequestException({
+      message:
+        'Import cannot be confirmed because validation errors remain.',
+
+      summary:
+        validation.summary,
+
+      rows:
+        validation.rows.filter(
+          (row) =>
+            row.issues.some(
+              (issue) =>
+                issue.type ===
+                'ERROR',
+            ),
+        ),
+    });
+  }
+
+  const result =
+    await this.studentImportPersistenceService.import(
+      importJobId,
+      {
+        schoolYearId:
+          input.schoolYearId,
+
+        sectionId:
+          input.sectionId,
+
+        rows:
+          validation.rows,
+      },
+    );
+
+  /*
+   * DB transaction succeeded,
+   * so the temporary workbook is
+   * no longer needed.
+   */
+  await this.importFileStorageService.delete(
+    importJobId,
+  );
+
+  return {
+    importJobId,
+
+    status:
+      'COMPLETED',
+
+    schoolYearId:
+      input.schoolYearId,
+
+    sectionId:
+      input.sectionId,
+
+    summary: {
+      totalRows:
+        validation.summary.totalRows,
+
+      importedRows:
+        result.importedRows,
+
+      createdStudents:
+        result.createdStudents,
+
+      reusedStudents:
+        result.reusedStudents,
+
+      createdEnrollments:
+        result.createdEnrollments,
+    },
+  };
 }
 
   private buildAiMappingRequest(

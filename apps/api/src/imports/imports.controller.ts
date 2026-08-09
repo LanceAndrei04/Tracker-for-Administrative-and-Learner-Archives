@@ -40,4 +40,21 @@ preview(
     body,
   );
 }
+
+@Post(':id/confirm')
+confirm(
+  @Param('id') id: string,
+
+  @Body()
+  body: {
+    schoolYearId: string;
+    sectionId: string;
+  },
+) {
+  return this.importsService.confirm(
+    id,
+    body,
+  );
+}
+
 }

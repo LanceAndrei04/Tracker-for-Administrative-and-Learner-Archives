@@ -25,6 +25,8 @@ import {ImportFileStorageService} from './storage/import-file-storage.service';
 import { ImportValidationService } from './validation/import-validation.service';
 import { StudentValidator } from './validation/validators/student.validator';
 
+import { StudentImportPersistenceService } from './persistence/student-import-persistence.service';
+
 import { GradesModule } from '../grades/grades.module';
 import { StudentsModule } from '../students/students.module';
 
@@ -60,6 +62,8 @@ import { StudentsModule } from '../students/students.module';
 
     ImportValidationService,
     StudentValidator,
+
+    StudentImportPersistenceService,
 
   ],
 })
