@@ -12,6 +12,7 @@ export type Student = {
   contactNumber: string;
   guardian: string;
   remarks?: string;
+  photoUrl?: string;
 };
 
 export type Teacher = {
