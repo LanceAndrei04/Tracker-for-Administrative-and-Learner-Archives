@@ -19,14 +19,18 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   return <div className="app-frame">
     <aside className={`sidebar ${isMenuOpen ? "sidebar-open" : ""}`} aria-label="Main navigation">
-      <Link className="brand" href="/dashboard"><span className="brand-mark">T</span><span>TALA</span></Link>
+      <Link className="school-identity" href="/dashboard">
+        <span className="brand"><span className="brand-mark">T</span><span>TALA</span></span>
+        <span className="school-name">San Isidro Elementary School</span>
+        <span className="school-workspace">School Records Workspace</span>
+      </Link>
       <nav className="sidebar-nav">
         {navigation.map((item) => <Link key={item.href} href={item.href} className={`nav-link ${pathname.startsWith(item.href) ? "nav-current" : ""}`} onClick={() => setMenuOpen(false)}>
           <Icon name={item.icon} /><span>{item.label}</span>
         </Link>)}
       </nav>
       <div className="sidebar-foot">
-        <Link href="/account" className={`account-link ${pathname === "/account" ? "nav-current" : ""}`}><span className="avatar">LR</span><span><strong>Lea Ramos</strong><small>Teacher</small></span><Icon name="chevron" /></Link>
+        <Link href="/account" className={`account-link ${pathname === "/account" ? "nav-current" : ""}`}><span className="avatar">LR</span><span><strong>Lea Ramos</strong><small>Teacher account</small></span><Icon name="chevron" /></Link>
       </div>
     </aside>
     {isMenuOpen ? <button className="drawer-backdrop" aria-label="Close navigation" onClick={() => setMenuOpen(false)} /> : null}

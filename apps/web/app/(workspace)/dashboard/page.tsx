@@ -5,7 +5,7 @@ import { Icon } from "@/components/ui/icon";
 export default async function DashboardPage() {
   const data = await talaApi.getDashboard();
   return <>
-    <header className="page-heading"><div><p className="page-eyebrow">School year 2026–2027</p><h1>Good afternoon, Lea.</h1><p>Here is what needs attention in your school records.</p></div><Link href="/students/new" className="button button-primary"><Icon name="plus" />Add student</Link></header>
+    <header className="page-heading dashboard-heading"><div><p className="page-eyebrow">School year 2026–2027</p><h1>Good afternoon, Lea.</h1><p>Review what needs attention and what changed recently.</p></div></header>
     <section className="count-grid" aria-label="School record counts">
       {[{ label: "Students", value: data.students }, { label: "Teachers", value: data.teachers }, { label: "Sections", value: data.sections }, { label: "Files", value: data.files }].map((item) => <div className="count-item" key={item.label}><strong>{item.value}</strong><span>{item.label}</span></div>)}
     </section>
@@ -22,5 +22,6 @@ export default async function DashboardPage() {
         <ol className="activity-list">{data.activity.map((item) => <li key={item.title}><span className="activity-dot" /><div><strong>{item.title}</strong><small>{item.when} · {item.kind}</small></div></li>)}</ol>
       </section>
     </div>
+    <section className="enrollment-check" aria-labelledby="enrollment-check-title"><div><h2 id="enrollment-check-title">Enrollment check</h2><p>Compare grade totals to spot missing imports or unexpected placements.</p></div><dl>{[["Kinder", 48], ["Grade 1", 62], ["Grade 2", 59], ["Grade 3", 54], ["Grade 4", 57], ["Grade 5", 64], ["Grade 6", 68]].map(([grade, count]) => <div key={String(grade)}><dt>{grade}</dt><dd><span style={{ "--enrollment-width": `${Math.round((Number(count) / 68) * 100)}%` } as React.CSSProperties} /><b>{count}</b></dd></div>)}</dl></section>
   </>;
 }
