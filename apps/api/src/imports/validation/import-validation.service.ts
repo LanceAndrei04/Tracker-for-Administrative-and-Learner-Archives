@@ -164,10 +164,10 @@ private async detectExistingStudents(
 
         row.issues.push({
         field: 'lrn',
-        type: 'ERROR',
-        code: 'LRN_ALREADY_EXISTS',
+        type: 'WARNING',
+        code: 'EXISTING_STUDENT',
         message:
-            `A student with LRN ${lrn} already exists in the system.`,
+            `A student with LRN ${lrn} already exists and will be reused during import.`,
         });
     }
     }
