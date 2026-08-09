@@ -28,6 +28,29 @@ export class StudentsRepository {
     });
   }
 
+
+  async findByLrns(lrns: string[]) {
+  if (lrns.length === 0) {
+    return [];
+  }
+
+  return this.prisma.student.findMany({
+    where: {
+      lrn: {
+        in: lrns,
+      },
+    },
+
+    select: {
+      id: true,
+      lrn: true,
+      firstName: true,
+      middleName: true,
+      lastName: true,
+    },
+  });
+}
+
   findByLrn(lrn: string) {
     return this.prisma.student.findUnique({
       where: { lrn },

@@ -26,9 +26,13 @@ import { ImportValidationService } from './validation/import-validation.service'
 import { StudentValidator } from './validation/validators/student.validator';
 
 import { GradesModule } from '../grades/grades.module';
+import { StudentsModule } from '../students/students.module';
 
 @Module({
-  imports: [GradesModule],
+  imports: [
+    GradesModule, 
+    StudentsModule
+  ],
 
   controllers: [ImportsController],
 

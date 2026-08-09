@@ -17,6 +17,7 @@ import {
 import { StudentValidator } from './validators/student.validator';
 
 import { GradesRepository } from '../../grades/grades.repository';
+import { StudentsRepository } from '../../students/students.repository';
 
 @Injectable()
 export class ImportValidationService {
@@ -26,73 +27,71 @@ export class ImportValidationService {
 
     private readonly gradesRepository:
       GradesRepository,
+
+    private readonly studentsRepository:
+        StudentsRepository
   ) {}
 
-  async validate(
+    async validate(
     target: ImportTarget,
     rows: NormalizedImportRow[],
-  ): Promise<ValidationResult> {
-    /*
-     * Read configured grades once.
-     *
-     * We don't query the database
-     * separately for every row.
-     */
+    ): Promise<ValidationResult> {
     const grades =
-      await this.gradesRepository.findAll();
+        await this.gradesRepository.findAll();
 
     const configuredGrades = new Set(
-      grades.map((grade) => grade.name),
+        grades.map((grade) => grade.name),
     );
 
     const validatedRows: ValidatedImportRow[] =
-      rows.map((row) => {
+        rows.map((row) => {
         const normalizationIssues =
-          this.mapNormalizationIssues(
+            this.mapNormalizationIssues(
             row.issues,
-          );
+            );
 
         const domainIssues =
-          this.validateRow(
+            this.validateRow(
             target,
             row.values,
-          );
+            );
 
         const gradeIssues =
-          this.validateConfiguredGrade(
+            this.validateConfiguredGrade(
             row.values,
             configuredGrades,
-          );
+            );
 
         return {
-          rowNumber: row.rowNumber,
-          values: row.values,
+            rowNumber: row.rowNumber,
+            values: row.values,
 
-          issues: [
+            issues: [
             ...normalizationIssues,
             ...domainIssues,
             ...gradeIssues,
-          ],
+            ],
         };
-      });
+        });
 
-    /*
-     * Cross-row validation happens
-     * after individual rows are built.
-     */
     this.detectDuplicateLrns(
-      validatedRows,
+        validatedRows,
     );
 
-    return {
-      rows: validatedRows,
+    if (target === 'STUDENT') {
+        await this.detectExistingStudents(
+        validatedRows,
+        );
+    }
 
-      summary:
+    return {
+        rows: validatedRows,
+        summary:
         this.buildSummary(
-          validatedRows,
+            validatedRows,
         ),
     };
-  }
+    }
 
   private validateRow(
     target: ImportTarget,
@@ -108,6 +107,70 @@ export class ImportValidationService {
         return [];
     }
   }
+
+private async detectExistingStudents(
+    rows: ValidatedImportRow[],
+    ) {
+    const lrns = [
+        ...new Set(
+        rows
+            .map((row) =>
+            String(
+                row.values.lrn ?? '',
+            ).trim(),
+            )
+            .filter((lrn) =>
+            /^\d{12}$/.test(lrn),
+            ),
+        ),
+    ];
+
+    if (lrns.length === 0) {
+        return;
+    }
+
+    const existingStudents =
+        await this.studentsRepository.findByLrns(
+        lrns,
+        );
+
+    const existingByLrn = new Map(
+        existingStudents
+        .filter(
+            (student) =>
+            student.lrn !== null,
+        )
+        .map((student) => [
+            student.lrn!,
+            student,
+        ]),
+    );
+
+    for (const row of rows) {
+        const lrn = String(
+        row.values.lrn ?? '',
+        ).trim();
+
+        if (!lrn) {
+        continue;
+        }
+
+        const existing =
+        existingByLrn.get(lrn);
+
+        if (!existing) {
+        continue;
+        }
+
+        row.issues.push({
+        field: 'lrn',
+        type: 'ERROR',
+        code: 'LRN_ALREADY_EXISTS',
+        message:
+            `A student with LRN ${lrn} already exists in the system.`,
+        });
+    }
+    }
 
   private validateConfiguredGrade(
     values: Record<string, unknown>,
