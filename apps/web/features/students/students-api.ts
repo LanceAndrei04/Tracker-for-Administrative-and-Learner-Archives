@@ -7,5 +7,9 @@ export function getStudent(id: string) { return json<Student>(`/students/${id}`)
 export function getGrades() { return json<Grade[]>("/grades"); }
 export function getSections() { return json<Section[]>("/sections"); }
 export function getSchoolYears() { return json<SchoolYear[]>("/school-years"); }
+export async function createSchoolYear(label: string) { return authenticatedFetch("/school-years", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ label }) }); }
+export async function activateSchoolYear(id: string) { return authenticatedFetch(`/school-years/${id}/activate`, { method: "PATCH" }); }
+export async function createGrade(name: string, level: number) { return authenticatedFetch("/grades", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, level }) }); }
+export async function createSection(name: string, gradeId: string, schoolYearId: string) { return authenticatedFetch("/sections", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ name, gradeId, schoolYearId }) }); }
 export async function updateStudent(id: string, body: Record<string, string | undefined>) { return authenticatedFetch(`/students/${id}`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }); }
 export async function changeEnrollmentSection(id: string, sectionId: string) { return authenticatedFetch(`/enrollments/${id}/section`, { method: "PATCH", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sectionId }) }); }

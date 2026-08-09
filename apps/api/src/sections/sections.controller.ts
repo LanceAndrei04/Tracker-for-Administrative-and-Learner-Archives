@@ -7,6 +7,7 @@ import {
 } from '@nestjs/common';
 import { CreateSectionDto } from './dto/create-section.dto';
 import { SectionsService } from './sections.service';
+import { Roles } from '../auth/roles.decorator';
 
 @Controller('sections')
 export class SectionsController {
@@ -25,6 +26,7 @@ export class SectionsController {
   }
 
   @Post()
+  @Roles('SUPER_ADMIN')
   create(@Body() dto: CreateSectionDto) {
     return this.sectionsService.create(dto);
   }

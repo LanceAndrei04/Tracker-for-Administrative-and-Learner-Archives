@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { getCurrentUser, type CurrentUser } from '@/lib/api/authenticated-fetch';
 import { supabase } from '@/lib/supabase/client';
+import { AuthProvider } from './auth-context';
 
 export function AuthGate({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -31,5 +32,5 @@ export function AuthGate({ children }: { children: React.ReactNode }) {
   }, [router]);
 
   if (!user) return <main className="auth-loading" aria-live="polite">Verifying secure access…</main>;
-  return <>{children}</>;
+  return <AuthProvider value={user}>{children}</AuthProvider>;
 }

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Icon } from "@/components/ui/icon";
+import { useCurrentUser } from "@/components/auth/auth-context";
 
 const navigation = [
   { href: "/dashboard", label: "Dashboard", icon: "dashboard" as const },
@@ -16,6 +17,7 @@ const navigation = [
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const user = useCurrentUser();
   const [isMenuOpen, setMenuOpen] = useState(false);
 
   return <div className="app-frame">
@@ -27,12 +29,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <span className="school-workspace">School Records Workspace</span>
       </Link>
       <nav className="sidebar-nav">
-        {navigation.map((item) => <Link key={item.href} href={item.href} className={`nav-link ${pathname.startsWith(item.href) ? "nav-current" : ""}`} onClick={() => setMenuOpen(false)}>
+        {navigation.filter((item) => item.href !== "/school-setup" || user?.role === "SUPER_ADMIN").map((item) => <Link key={item.href} href={item.href} className={`nav-link ${pathname.startsWith(item.href) ? "nav-current" : ""}`} onClick={() => setMenuOpen(false)}>
           <Icon name={item.icon} /><span>{item.label}</span>
         </Link>)}
       </nav>
       <div className="sidebar-foot">
-        <Link href="/account" className={`account-link ${pathname === "/account" ? "nav-current" : ""}`}><Avatar className="avatar"><AvatarFallback>LR</AvatarFallback></Avatar><span><strong>Lea Ramos</strong><small>Teacher account</small></span><Icon name="chevron" /></Link>
+        <Link href="/account" className={`account-link ${pathname === "/account" ? "nav-current" : ""}`}><Avatar className="avatar"><AvatarFallback>{user?.email.slice(0, 2).toUpperCase() ?? "TA"}</AvatarFallback></Avatar><span><strong>{user?.email ?? "TALA account"}</strong><small>{user?.role === "SUPER_ADMIN" ? "Super Admin" : "Teacher account"}</small></span><Icon name="chevron" /></Link>
       </div>
     </aside>
     {isMenuOpen ? <button className="drawer-backdrop" aria-label="Close navigation" onClick={() => setMenuOpen(false)} /> : null}
