@@ -1,0 +1,5 @@
+import Link from "next/link";
+import { Icon } from "@/components/ui/icon";
+
+export default function SetupPage() { return <><header className="page-heading"><div><h1>School setup</h1><p>Configure the school years, grades, and sections used in records.</p></div></header><div className="setup-list"><SetupCard href="/school-setup/school-years" title="School years" description="Start a school year and choose the active context." meta="2026–2027 active" /><SetupCard href="/school-setup/grades" title="Grades" description="Manage the grade levels available at your school." meta="7 grades configured" /><SetupCard href="/school-setup/sections" title="Sections" description="Organize sections within each school year and grade." meta="16 sections this year" /></div></>; }
+function SetupCard({ href, title, description, meta }: { href: string; title: string; description: string; meta: string }) { return <Link href={href} className="setup-card"><span className="setup-icon"><Icon name="setup" /></span><span><strong>{title}</strong><small>{description}</small><em>{meta}</em></span><Icon name="arrow" /></Link>; }

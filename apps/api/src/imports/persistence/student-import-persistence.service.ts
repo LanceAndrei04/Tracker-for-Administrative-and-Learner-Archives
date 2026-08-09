@@ -278,9 +278,6 @@ export class StudentImportPersistenceService {
             schoolYearId:
               input.schoolYearId,
 
-            sheetName:
-              null,
-
             status:
               'COMPLETED',
 

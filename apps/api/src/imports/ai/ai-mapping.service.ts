@@ -48,31 +48,7 @@ export class AiMappingService {
   ): Promise<AiMappingResult> {
     this.privacyGuard.assertSafe(request);
 
-    console.log('AI enabled:', this.enabled);
-    console.log(
-      'AI client exists:',
-      Boolean(this.client),
-    );
-    console.log('AI model:', this.model);
-
-    console.log(
-      'AI request:',
-      JSON.stringify(request, null, 2),
-    );
-
-    const apiKey =
-  process.env.GEMINI_API_KEY?.trim();
-
-console.log({
-  keyLoaded: Boolean(apiKey),
-  keyLength: apiKey?.length,
-  keyStart: apiKey?.slice(0, 6),
-  keyEnd: apiKey?.slice(-4),
-});
-
     if (!this.isEnabled()) {
-      console.log('AI mapping is disabled.');
-
       return {
         suggestions: [],
       };
@@ -145,16 +121,7 @@ console.log({
           },
         });
 
-      console.log(
-        'Gemini raw response:',
-        response.text,
-      );
-
       if (!response.text) {
-        console.log(
-          'Gemini returned no response text.',
-        );
-
         return {
           suggestions: [],
         };
@@ -164,20 +131,12 @@ console.log({
         response.text,
       ) as AiMappingResult;
 
-      console.log(
-        'Gemini parsed result:',
-        parsed,
-      );
-
       return this.validateResult(
         parsed,
         request,
       );
-    } catch (error) {
-      console.error(
-        'AI MAPPING ERROR:',
-        error,
-      );
+    } catch {
+      // Mapping suggestions are optional. Do not log request or provider data.
 
       return {
         suggestions: [],
