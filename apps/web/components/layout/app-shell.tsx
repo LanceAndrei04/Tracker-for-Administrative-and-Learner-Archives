@@ -21,6 +21,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <aside className={`sidebar ${isMenuOpen ? "sidebar-open" : ""}`} aria-label="Main navigation">
       <Link className="school-identity" href="/dashboard">
         <span className="brand"><span className="brand-mark">T</span><span>TALA</span></span>
+        <span className="product-expansion">Tracker for Administrative and Learner Archives</span>
         <span className="school-name">San Isidro Elementary School</span>
         <span className="school-workspace">School Records Workspace</span>
       </Link>
