@@ -25,63 +25,85 @@ export class GradeNormalizer {
       };
     }
 
-    const aliases: Record<string, string> = {
-      K: 'Kinder',
-      KINDER: 'Kinder',
-      KINDERGARTEN: 'Kinder',
-
-      '1': 'Grade 1',
-      I: 'Grade 1',
-      G1: 'Grade 1',
-      'GR 1': 'Grade 1',
-      'GRADE 1': 'Grade 1',
-
-      '2': 'Grade 2',
-      II: 'Grade 2',
-      G2: 'Grade 2',
-      'GR 2': 'Grade 2',
-      'GRADE 2': 'Grade 2',
-
-      '3': 'Grade 3',
-      III: 'Grade 3',
-      G3: 'Grade 3',
-      'GR 3': 'Grade 3',
-      'GRADE 3': 'Grade 3',
-
-      '4': 'Grade 4',
-      IV: 'Grade 4',
-      G4: 'Grade 4',
-      'GR 4': 'Grade 4',
-      'GRADE 4': 'Grade 4',
-
-      '5': 'Grade 5',
-      V: 'Grade 5',
-      G5: 'Grade 5',
-      'GR 5': 'Grade 5',
-      'GRADE 5': 'Grade 5',
-
-      '6': 'Grade 6',
-      VI: 'Grade 6',
-      G6: 'Grade 6',
-      'GR 6': 'Grade 6',
-      'GRADE 6': 'Grade 6',
-    };
-
-    const normalized = aliases[raw];
-
-    if (!normalized) {
+    if (
+      raw === 'K' ||
+      raw === 'KINDER' ||
+      raw === 'KINDERGARTEN'
+    ) {
       return {
         originalValue: value,
-        normalizedValue: null,
-        success: false,
-        error: `Unknown grade value: ${value}`,
+        normalizedValue: 'Kinder',
+        success: true,
+      };
+    }
+
+    const numeric = this.extractGradeNumber(raw);
+
+    if (
+      numeric !== null &&
+      numeric >= 1 &&
+      numeric <= 12
+    ) {
+      return {
+        originalValue: value,
+        normalizedValue: `Grade ${numeric}`,
+        success: true,
       };
     }
 
     return {
       originalValue: value,
-      normalizedValue: normalized,
-      success: true,
+      normalizedValue: null,
+      success: false,
+      error: `Unknown grade value: ${value}`,
     };
+  }
+
+  private extractGradeNumber(
+    value: string,
+  ): number | null {
+    const directPatterns = [
+      /^(\d{1,2})$/,
+      /^G(\d{1,2})$/,
+      /^GR\s*(\d{1,2})$/,
+      /^GRADE\s*(\d{1,2})$/,
+    ];
+
+    for (const pattern of directPatterns) {
+      const match = value.match(pattern);
+
+      if (match) {
+        return Number(match[1]);
+      }
+    }
+
+    const romanMap: Record<string, number> = {
+      I: 1,
+      II: 2,
+      III: 3,
+      IV: 4,
+      V: 5,
+      VI: 6,
+      VII: 7,
+      VIII: 8,
+      IX: 9,
+      X: 10,
+      XI: 11,
+      XII: 12,
+    };
+
+    if (romanMap[value]) {
+      return romanMap[value];
+    }
+
+    const gradeRomanMatch = value.match(
+      /^(?:GRADE|GR|G)\s*(I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII)$/,
+    );
+
+    if (gradeRomanMatch) {
+      return romanMap[gradeRomanMatch[1]] ?? null;
+    }
+
+    return null;
   }
 }
