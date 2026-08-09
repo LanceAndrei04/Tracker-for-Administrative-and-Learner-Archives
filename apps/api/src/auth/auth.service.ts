@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, NotFoundException, UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import WebSocket from 'ws';
@@ -58,6 +58,39 @@ export class AuthService {
       update: { email, role: 'SUPER_ADMIN', isActive: true },
       create: { supabaseUserId: authUser.id, email, role: 'SUPER_ADMIN', isActive: true },
     });
+  }
+
+  async inviteTeacher(fullName: string, email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const redirectTo = `${(this.config.get<string>('WEB_ORIGIN') ?? 'http://localhost:3000').split(',')[0].trim()}/set-password`;
+    const { data, error } = await this.supabase.auth.admin.inviteUserByEmail(normalizedEmail, {
+      data: { full_name: fullName.trim() },
+      redirectTo,
+    });
+    if (error || !data.user) {
+      throw new ForbiddenException('The teacher invitation could not be created.');
+    }
+
+    await this.prisma.user.upsert({
+      where: { supabaseUserId: data.user.id },
+      update: { email: normalizedEmail, role: 'TEACHER', isActive: true },
+      create: { supabaseUserId: data.user.id, email: normalizedEmail, role: 'TEACHER', isActive: true },
+    });
+    return { email: normalizedEmail, role: 'TEACHER' as const };
+  }
+
+  async approveExistingSupabaseUser(email: string) {
+    const normalizedEmail = email.trim().toLowerCase();
+    const users = await this.listUsersWithRetry();
+    const authUser = users.find((user) => user.email?.toLowerCase() === normalizedEmail);
+    if (!authUser) throw new NotFoundException('No matching Supabase user was found. Invite the teacher in Supabase first.');
+
+    const user = await this.prisma.user.upsert({
+      where: { supabaseUserId: authUser.id },
+      update: { email: normalizedEmail, role: 'TEACHER', isActive: true },
+      create: { supabaseUserId: authUser.id, email: normalizedEmail, role: 'TEACHER', isActive: true },
+    });
+    return { id: user.id, email: user.email, role: user.role };
   }
 
   private async listUsersWithRetry() {
