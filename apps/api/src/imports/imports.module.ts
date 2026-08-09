@@ -22,7 +22,14 @@ import { AiPrivacyGuard } from './ai/ai-privacy.guard';
 
 import {ImportFileStorageService} from './storage/import-file-storage.service';
 
+import { ImportValidationService } from './validation/import-validation.service';
+import { StudentValidator } from './validation/validators/student.validator';
+
+import { GradesModule } from '../grades/grades.module';
+
 @Module({
+  imports: [GradesModule],
+
   controllers: [ImportsController],
 
   providers: [
@@ -46,6 +53,10 @@ import {ImportFileStorageService} from './storage/import-file-storage.service';
     AiPrivacyGuard,
 
     ImportFileStorageService,
+
+    ImportValidationService,
+    StudentValidator,
+
   ],
 })
 export class ImportsModule {}

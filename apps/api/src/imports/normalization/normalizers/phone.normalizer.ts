@@ -35,18 +35,11 @@ export class PhoneNormalizer {
       phone = `0${phone}`;
     }
 
-    let warning: string | undefined;
-
-    if (phone.length !== 11) {
-      warning =
-        'Contact number does not contain 11 digits after normalization.';
-    }
-
-    return {
-      originalValue: value,
-      normalizedValue: phone,
-      success: true,
-      warning,
-    };
+return {
+  originalValue: value,
+  normalizedValue:
+    phone.length > 0 ? phone : null,
+  success: true,
+};
   }
 }

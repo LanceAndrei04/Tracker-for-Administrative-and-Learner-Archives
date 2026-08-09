@@ -27,6 +27,9 @@ import type {
   AiMappingResult,
 } from './ai/ai-mapping.types';
 
+
+import { ImportValidationService } from './validation/import-validation.service';
+
 @Injectable()
 export class ImportsService {
   constructor(
@@ -37,6 +40,7 @@ export class ImportsService {
     private readonly importsRepository: ImportsRepository,
     private readonly importFileStorageService: ImportFileStorageService,
     private readonly normalizationService: NormalizationService,
+    private readonly importValidationService: ImportValidationService,
   ) {}
 
   async upload(file: Express.Multer.File) {
@@ -288,13 +292,11 @@ export class ImportsService {
         mappedRows,
       );
 
-    /*
-     * Save the user's confirmed mapping.
-     *
-     * This mapping becomes authoritative.
-     * AI suggestions are no longer relevant
-     * once the user confirms the fields.
-     */
+   const validation =
+      await this.importValidationService.validate(
+        target,
+        normalizedRows,
+      );
     await this.importsRepository.updateMapping(
       importJobId,
       {
@@ -303,7 +305,7 @@ export class ImportsService {
       },
     );
 
-    return {
+  return {
       importJobId,
       target,
       sheetName: sheet.name,
@@ -315,9 +317,11 @@ export class ImportsService {
 
       mappings: input.mappings,
 
-      normalizedRows,
+      summary: validation.summary,
+
+      rows: validation.rows,
     };
-  }
+}
 
   private buildAiMappingRequest(
     target: ImportTarget,
