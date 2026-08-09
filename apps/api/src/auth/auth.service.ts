@@ -47,9 +47,8 @@ export class AuthService {
     if (!email) {
       throw new Error('INITIAL_SUPER_ADMIN_EMAIL must be configured on the API server.');
     }
-    const { data, error } = await this.supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
-    if (error) throw new Error('Unable to look up the configured Super Admin in Supabase Auth.');
-    const authUser = data.users.find((user) => user.email?.toLowerCase() === email);
+    const users = await this.listUsersWithRetry();
+    const authUser = users.find((user) => user.email?.toLowerCase() === email);
     if (!authUser) {
       throw new Error(`Initial Super Admin ${email} does not exist in Supabase Auth.`);
     }
@@ -59,5 +58,20 @@ export class AuthService {
       update: { email, role: 'SUPER_ADMIN', isActive: true },
       create: { supabaseUserId: authUser.id, email, role: 'SUPER_ADMIN', isActive: true },
     });
+  }
+
+  private async listUsersWithRetry() {
+    let lastError: unknown;
+    for (const delayMs of [0, 500, 1_000]) {
+      if (delayMs) await new Promise((resolve) => setTimeout(resolve, delayMs));
+      try {
+        const { data, error } = await this.supabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        if (error) throw error;
+        return data.users;
+      } catch (error) {
+        lastError = error;
+      }
+    }
+    throw new Error('Unable to reach Supabase Auth while provisioning the initial Super Admin.', { cause: lastError });
   }
 }
