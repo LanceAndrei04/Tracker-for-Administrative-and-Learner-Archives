@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Icon } from "@/components/ui/icon";
 
 const navigation = [
@@ -31,7 +32,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Link>)}
       </nav>
       <div className="sidebar-foot">
-        <Link href="/account" className={`account-link ${pathname === "/account" ? "nav-current" : ""}`}><span className="avatar">LR</span><span><strong>Lea Ramos</strong><small>Teacher account</small></span><Icon name="chevron" /></Link>
+        <Link href="/account" className={`account-link ${pathname === "/account" ? "nav-current" : ""}`}><Avatar className="avatar"><AvatarFallback>LR</AvatarFallback></Avatar><span><strong>Lea Ramos</strong><small>Teacher account</small></span><Icon name="chevron" /></Link>
       </div>
     </aside>
     {isMenuOpen ? <button className="drawer-backdrop" aria-label="Close navigation" onClick={() => setMenuOpen(false)} /> : null}
