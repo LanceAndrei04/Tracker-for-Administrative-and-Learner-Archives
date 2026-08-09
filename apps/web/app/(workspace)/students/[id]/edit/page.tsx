@@ -1,2 +1,2 @@
-import { StudentForm } from "@/features/students/student-form";
-export default function EditStudentPage() { return <StudentForm edit />; }
+import { EditStudentForm } from "@/features/students/edit-student-form";
+export default function EditStudentPage() { return <EditStudentForm />; }

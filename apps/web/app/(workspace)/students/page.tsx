@@ -1,3 +1,2 @@
-import { RecordList } from "@/features/records/record-list";
-import { talaApi } from "@/lib/api/tala-api";
-export default async function StudentsPage() { return <RecordList type="student" records={await talaApi.getStudents()} />; }
+import { StudentsList } from "@/features/students/students-list";
+export default function StudentsPage() { return <StudentsList />; }
