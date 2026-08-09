@@ -1,6 +1,10 @@
 export type Student = {
   id: string;
   name: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  suffix?: string;
   lrn: string;
   grade: string;
   section: string;
@@ -31,12 +35,12 @@ export const schoolYears = [
 ];
 
 export const students: Student[] = [
-  { id: "ana-santos", name: "Ana Santos", lrn: "123457000001", grade: "Grade 6", section: "Rizal", status: "Active", updatedAt: "Today, 9:42 AM", birthday: "May 18, 2014", birthplace: "Quezon City", address: "18 Sampaguita Street, Quezon City", contactNumber: "0917 555 0182", guardian: "Maribel Santos", remarks: "Prefers guardian contact after 3 PM." },
-  { id: "miguel-reyes", name: "Miguel Reyes", lrn: "123457000002", grade: "Grade 6", section: "Rizal", status: "Active", updatedAt: "Yesterday", birthday: "August 2, 2014", birthplace: "Manila", address: "41 Mabini Street, Quezon City", contactNumber: "0918 555 0174", guardian: "Joseph Reyes" },
-  { id: "luis-cruz", name: "Luis Cruz", lrn: "123457000003", grade: "Grade 5", section: "Mabini", status: "Active", updatedAt: "Aug 6", birthday: "January 13, 2015", birthplace: "Caloocan", address: "12 P. Tuazon Boulevard, Quezon City", contactNumber: "0920 555 0161", guardian: "Lea Cruz" },
-  { id: "samira-tan", name: "Samira Tan", lrn: "123457000004", grade: "Grade 5", section: "Luna", status: "Active", updatedAt: "Aug 5", birthday: "November 27, 2015", birthplace: "Quezon City", address: "7 Aurora Boulevard, Quezon City", contactNumber: "0917 555 0146", guardian: "Noel Tan" },
-  { id: "joseph-dela-cruz", name: "Joseph dela Cruz", lrn: "123457000005", grade: "Grade 4", section: "Bonifacio", status: "Active", updatedAt: "Aug 4", birthday: "March 8, 2016", birthplace: "Marikina", address: "63 Katipunan Avenue, Quezon City", contactNumber: "0919 555 0123", guardian: "Rosa dela Cruz" },
-  { id: "bianca-lim", name: "Bianca Lim", lrn: "123457000006", grade: "Grade 4", section: "Bonifacio", status: "Active", updatedAt: "Aug 2", birthday: "June 21, 2016", birthplace: "Manila", address: "29 West Avenue, Quezon City", contactNumber: "0917 555 0117", guardian: "Regina Lim" },
+  { id: "ana-santos", name: "Ana Santos", firstName: "Ana", middleName: "Marie", lastName: "Santos", lrn: "123457000001", grade: "Grade 6", section: "Rizal", status: "Active", updatedAt: "Today, 9:42 AM", birthday: "May 18, 2014", birthplace: "Quezon City", address: "18 Sampaguita Street, Quezon City", contactNumber: "0917 555 0182", guardian: "Maribel Santos", remarks: "Prefers guardian contact after 3 PM." },
+  { id: "miguel-reyes", name: "Miguel Reyes", firstName: "Miguel", lastName: "Reyes", lrn: "123457000002", grade: "Grade 6", section: "Rizal", status: "Active", updatedAt: "Yesterday", birthday: "August 2, 2014", birthplace: "Manila", address: "41 Mabini Street, Quezon City", contactNumber: "0918 555 0174", guardian: "Joseph Reyes" },
+  { id: "luis-cruz", name: "Luis Cruz", firstName: "Luis", lastName: "Cruz", lrn: "123457000003", grade: "Grade 5", section: "Mabini", status: "Active", updatedAt: "Aug 6", birthday: "January 13, 2015", birthplace: "Caloocan", address: "12 P. Tuazon Boulevard, Quezon City", contactNumber: "0920 555 0161", guardian: "Lea Cruz" },
+  { id: "samira-tan", name: "Samira Tan", firstName: "Samira", lastName: "Tan", lrn: "123457000004", grade: "Grade 5", section: "Luna", status: "Active", updatedAt: "Aug 5", birthday: "November 27, 2015", birthplace: "Quezon City", address: "7 Aurora Boulevard, Quezon City", contactNumber: "0917 555 0146", guardian: "Noel Tan" },
+  { id: "joseph-dela-cruz", name: "Joseph dela Cruz", firstName: "Joseph", lastName: "dela Cruz", lrn: "123457000005", grade: "Grade 4", section: "Bonifacio", status: "Active", updatedAt: "Aug 4", birthday: "March 8, 2016", birthplace: "Marikina", address: "63 Katipunan Avenue, Quezon City", contactNumber: "0919 555 0123", guardian: "Rosa dela Cruz" },
+  { id: "bianca-lim", name: "Bianca Lim", firstName: "Bianca", lastName: "Lim", lrn: "123457000006", grade: "Grade 4", section: "Bonifacio", status: "Active", updatedAt: "Aug 2", birthday: "June 21, 2016", birthplace: "Manila", address: "29 West Avenue, Quezon City", contactNumber: "0917 555 0117", guardian: "Regina Lim" },
 ];
 
 export const teachers: Teacher[] = [
