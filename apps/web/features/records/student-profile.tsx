@@ -2,24 +2,22 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { useState } from "react";
 import { Icon } from "@/components/ui/icon";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { Student } from "@/lib/mock-data/tala";
 
-type ProfileTab = "overview" | "enrollment" | "files" | "activity";
-const tabs: { id: ProfileTab; label: string }[] = [{ id: "overview", label: "Overview" }, { id: "enrollment", label: "Enrollment history" }, { id: "files", label: "Files" }, { id: "activity", label: "Activity" }];
-
 export function StudentProfile({ student }: { student: Student }) {
-  const [activeTab, setActiveTab] = useState<ProfileTab>("overview");
   const initials = student.name.split(" ").map((part) => part[0]).join("").slice(0, 2);
 
   return <><Link href="/students" className="back-link">← Students</Link>
     <header className="student-record-header"><span className="profile-tab tab-grade-6" />{student.photoUrl ? <Image className="profile-photo" src={student.photoUrl} alt={student.name} width={132} height={132} /> : <div className="profile-photo profile-photo-placeholder" aria-label={student.name + " photo placeholder"}><span>{initials}</span><small>No photo</small></div>}<div className="student-record-title"><p className="record-kicker">Student record</p><h1>{student.name}</h1><div className="record-identifiers"><span>{student.grade}</span><span>{student.section}</span><span>LRN <b className="tabular">{student.lrn}</b></span></div></div><div className="record-header-actions"><span className="status status-active"><i />Active</span><Link href={"/students/" + student.id + "/edit"} className="button button-secondary">Edit student</Link></div></header>
-    <nav className="profile-tabs" aria-label="Student record sections">{tabs.map((tab) => <button key={tab.id} className={activeTab === tab.id ? "profile-tab-current" : ""} onClick={() => setActiveTab(tab.id)}>{tab.label}{tab.id === "files" ? <span>2</span> : null}</button>)}</nav>
-    {activeTab === "overview" ? <Overview student={student} /> : null}
-    {activeTab === "enrollment" ? <EnrollmentHistory student={student} /> : null}
-    {activeTab === "files" ? <Files /> : null}
-    {activeTab === "activity" ? <Activity /> : null}
+    <Tabs defaultValue="overview">
+      <TabsList variant="line" className="profile-tabs" aria-label="Student record sections"><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="enrollment">Enrollment history</TabsTrigger><TabsTrigger value="files">Files <span>2</span></TabsTrigger><TabsTrigger value="activity">Activity</TabsTrigger></TabsList>
+      <TabsContent value="overview"><Overview student={student} /></TabsContent>
+      <TabsContent value="enrollment"><EnrollmentHistory student={student} /></TabsContent>
+      <TabsContent value="files"><Files /></TabsContent>
+      <TabsContent value="activity"><Activity /></TabsContent>
+    </Tabs>
   </>;
 }
 
