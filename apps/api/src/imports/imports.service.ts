@@ -232,13 +232,15 @@ export class ImportsService {
       );
     }
 
-    /*
-     * Convert confirmed source-column mappings
-     * into the generic format expected by the
-     * normalization layer.
-     */
+    const allRows =
+      await this.xlsxParser.parseSheetRows(
+        fileBuffer,
+        input.sheetName,
+        sheet.headerRowNumber,
+      );
+
     const mappedRows =
-      sheet.sampleRows.map((row) => {
+      allRows.map((row) => {
         const cells = input.mappings
           .map((mapping) => {
             const sourceCell =
@@ -310,10 +312,7 @@ export class ImportsService {
       target,
       sheetName: sheet.name,
 
-      rowCount: Math.max(
-        sheet.rowCount - 1,
-        0,
-      ),
+      rowCount: allRows.length,
 
       mappings: input.mappings,
 
