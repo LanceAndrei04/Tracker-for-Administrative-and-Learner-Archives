@@ -33,6 +33,14 @@ export class StudentValidator {
       value === undefined ||
       value === ''
     ) {
+      issues.push({
+        field: 'lrn',
+        type: 'ERROR',
+        code: 'LRN_REQUIRED',
+        message:
+          'LRN is required for student import.',
+      });
+
       return;
     }
 
@@ -93,6 +101,13 @@ export class StudentValidator {
       value === undefined ||
       value === ''
     ) {
+      issues.push({
+        field: 'birthday',
+        type: 'WARNING',
+        code: 'BIRTHDAY_NOT_PROVIDED',
+        message: 'Birthday not provided.',
+      });
+
       return;
     }
 

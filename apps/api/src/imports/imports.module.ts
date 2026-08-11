@@ -26,6 +26,7 @@ import { ImportValidationService } from './validation/import-validation.service'
 import { StudentValidator } from './validation/validators/student.validator';
 
 import { StudentImportPersistenceService } from './persistence/student-import-persistence.service';
+import { ImportDestinationValidationService } from './validation/import-destination-validation.service';
 
 import { GradesModule } from '../grades/grades.module';
 import { StudentsModule } from '../students/students.module';
@@ -64,6 +65,7 @@ import { StudentsModule } from '../students/students.module';
     StudentValidator,
 
     StudentImportPersistenceService,
+    ImportDestinationValidationService,
 
   ],
 })

@@ -16,7 +16,7 @@ export const studentImportSchema: ImportSchema = {
         'LEARNER REFERENCE NO',
       ],
       normalizer: 'IDENTIFIER',
-      required: false,
+      required: true,
     },
 
     {

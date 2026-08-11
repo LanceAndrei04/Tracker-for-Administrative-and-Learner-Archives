@@ -9,6 +9,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 
 import { ImportsService } from './imports.service';
+import { ValidateImportDestinationDto } from './dto/validate-import-destination.dto';
 
 @Controller('imports')
 export class ImportsController {
@@ -36,6 +37,17 @@ preview(
   },
 ) {
   return this.importsService.preview(
+    id,
+    body,
+  );
+}
+
+@Post(':id/validate-destination')
+validateDestination(
+  @Param('id') id: string,
+  @Body() body: ValidateImportDestinationDto,
+) {
+  return this.importsService.validateDestination(
     id,
     body,
   );

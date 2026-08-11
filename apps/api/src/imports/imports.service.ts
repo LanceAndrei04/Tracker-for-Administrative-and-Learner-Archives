@@ -31,6 +31,8 @@ import type {
 
 
 import { ImportValidationService } from './validation/import-validation.service';
+import { ImportDestinationValidationService } from './validation/import-destination-validation.service';
+import { ValidateImportDestinationDto } from './dto/validate-import-destination.dto';
 
 @Injectable()
 export class ImportsService {
@@ -43,6 +45,7 @@ export class ImportsService {
     private readonly importFileStorageService: ImportFileStorageService,
     private readonly normalizationService: NormalizationService,
     private readonly importValidationService: ImportValidationService,
+    private readonly importDestinationValidationService: ImportDestinationValidationService,
     private readonly studentImportPersistenceService: StudentImportPersistenceService,
   ) {}
 
@@ -323,6 +326,123 @@ export class ImportsService {
 
       rows: validation.rows,
     };
+}
+
+
+async validateDestination(
+  importJobId: string,
+  input: ValidateImportDestinationDto,
+) {
+  const importJob =
+    await this.importsRepository.findJobById(
+      importJobId,
+    );
+
+  if (!importJob) {
+    throw new BadRequestException(
+      'Import job was not found.',
+    );
+  }
+
+  if (importJob.status === 'COMPLETED') {
+    throw new BadRequestException(
+      'This import job has already been completed.',
+    );
+  }
+
+  if (!importJob.mappingConfig) {
+    throw new BadRequestException(
+      'This import has no confirmed column mapping.',
+    );
+  }
+
+  const mappingConfig =
+    importJob.mappingConfig as unknown as {
+      sheetName: string;
+      mappings: {
+        columnIndex: number;
+        targetField: string;
+      }[];
+    };
+
+  if (
+    !mappingConfig.sheetName ||
+    !Array.isArray(mappingConfig.mappings)
+  ) {
+    throw new BadRequestException(
+      'Saved import mapping is invalid.',
+    );
+  }
+
+  const fileBuffer =
+    await this.importFileStorageService.get(
+      importJobId,
+    );
+
+  const allRows =
+    await this.xlsxParser.parseSheetRows(
+      fileBuffer,
+      mappingConfig.sheetName,
+    );
+
+  const mappedRows = allRows.map((row) => ({
+    rowNumber: row.rowNumber,
+    cells: mappingConfig.mappings
+      .map((mapping) => {
+        const sourceCell = row.cells.find(
+          (cell) =>
+            cell.columnIndex === mapping.columnIndex,
+        );
+
+        return sourceCell
+          ? {
+              columnIndex: mapping.columnIndex,
+              header: sourceCell.header,
+              targetField: mapping.targetField,
+              rawValue: sourceCell.rawValue,
+              displayValue: sourceCell.displayValue,
+            }
+          : null;
+      })
+      .filter(
+        (cell): cell is NonNullable<typeof cell> =>
+          cell !== null,
+      ),
+  }));
+
+  const target = importJob.target as ImportTarget;
+
+  if (target !== 'STUDENT') {
+    throw new BadRequestException(
+      `Destination validation for target "${target}" is not implemented yet.`,
+    );
+  }
+
+  const normalizedRows =
+    this.normalizationService.normalizeRows(
+      target,
+      mappedRows,
+    );
+
+  const validation =
+    await this.importValidationService.validate(
+      target,
+      normalizedRows,
+    );
+
+  const destinationValidation =
+    await this.importDestinationValidationService.validate({
+      schoolYearId: input.schoolYearId,
+      sectionId: input.sectionId,
+      rows: validation.rows,
+    });
+
+  return {
+    importJobId,
+    schoolYearId: input.schoolYearId,
+    sectionId: input.sectionId,
+    ...destinationValidation,
+  };
 }
 
 
