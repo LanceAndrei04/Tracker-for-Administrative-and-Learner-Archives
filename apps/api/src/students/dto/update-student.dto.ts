@@ -3,59 +3,60 @@ import {
   IsOptional,
   IsString,
   Length,
+  ValidateIf,
 } from 'class-validator';
 
 export class UpdateStudentDto {
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsString()
   @Length(12, 12)
   lrn?: string;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsString()
   firstName?: string;
 
   @IsOptional()
   @IsString()
-  middleName?: string;
+  middleName?: string | null;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsString()
   lastName?: string;
 
   @IsOptional()
   @IsString()
-  suffix?: string;
+  suffix?: string | null;
 
-  @IsOptional()
+  @ValidateIf((_object, value) => value !== undefined)
   @IsDateString()
   birthday?: string;
 
   @IsOptional()
   @IsString()
-  birthplace?: string;
+  birthplace?: string | null;
 
   @IsOptional()
   @IsString()
-  address?: string;
+  address?: string | null;
 
   @IsOptional()
   @IsString()
-  fatherName?: string;
+  fatherName?: string | null;
 
   @IsOptional()
   @IsString()
-  motherName?: string;
+  motherName?: string | null;
 
   @IsOptional()
   @IsString()
-  guardianName?: string;
+  guardianName?: string | null;
 
   @IsOptional()
   @IsString()
-  contactNumber?: string;
+  contactNumber?: string | null;
 
   @IsOptional()
   @IsString()
-  remarks?: string;
+  remarks?: string | null;
 }

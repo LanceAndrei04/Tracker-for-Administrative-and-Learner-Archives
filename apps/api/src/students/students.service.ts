@@ -128,9 +128,7 @@ export class StudentsService {
 
   return this.studentsRepository.update(id, {
     ...dto,
-    birthday: dto.birthday
-      ? new Date(dto.birthday)
-      : undefined,
+    birthday: dto.birthday ? new Date(dto.birthday) : undefined,
   });
 }
 }

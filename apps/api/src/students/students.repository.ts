@@ -170,17 +170,17 @@ export class StudentsRepository {
   data: {
     lrn?: string;
     firstName?: string;
-    middleName?: string;
+    middleName?: string | null;
     lastName?: string;
-    suffix?: string;
+    suffix?: string | null;
     birthday?: Date;
-    birthplace?: string;
-    address?: string;
-    fatherName?: string;
-    motherName?: string;
-    guardianName?: string;
-    contactNumber?: string;
-    remarks?: string;
+    birthplace?: string | null;
+    address?: string | null;
+    fatherName?: string | null;
+    motherName?: string | null;
+    guardianName?: string | null;
+    contactNumber?: string | null;
+    remarks?: string | null;
   },
 ) {
   return this.prisma.student.update({

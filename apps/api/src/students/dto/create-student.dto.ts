@@ -8,10 +8,10 @@ import {
 } from 'class-validator';
 
 export class CreateStudentDto {
-  @IsOptional()
   @IsString()
+  @IsNotEmpty()
   @Length(12, 12)
-  lrn?: string;
+  lrn!: string;
 
   @IsString()
   @IsNotEmpty()
@@ -29,9 +29,8 @@ export class CreateStudentDto {
   @IsString()
   suffix?: string;
 
-  @IsOptional()
   @IsDateString()
-  birthday?: string;
+  birthday!: string;
 
   @IsOptional()
   @IsString()
