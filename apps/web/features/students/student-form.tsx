@@ -1,102 +1,31 @@
 "use client";
 
 import Link from "next/link";
-import { useParams } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { toast } from "sonner";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Field as ShadcnField, FieldError, FieldLabel } from "@/components/ui/field";
-import { Icon } from "@/components/ui/icon";
+import { Field, FieldError, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { talaApi, type StudentSaveResult } from "@/lib/api/tala-api";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { ApiError } from "@/lib/api/authenticated-fetch";
+import { createStudent, getGrades, getSchoolYears, getSections } from "./students-api";
+import type { Grade, SchoolYear, Section } from "./types";
 
-type FormErrors = Partial<Record<"lrn" | "firstName" | "lastName" | "birthday" | "contactNumber", string>>;
-type SaveState = "idle" | "saving" | "success" | "conflict" | "error";
+type Errors = Partial<Record<"lrn" | "firstName" | "lastName" | "schoolYearId" | "gradeId" | "sectionId", string>>;
+const value = (data: FormData, key: string) => { const text = String(data.get(key) ?? "").trim(); return text || undefined; };
 
-const initialValues = {
-  lrn: "123457000001",
-  firstName: "Ana",
-  middleName: "Marie",
-  lastName: "Santos",
-  suffix: "",
-  birthday: "2014-05-18",
-  birthplace: "Quezon City",
-  address: "18 Sampaguita Street, Quezon City",
-  guardian: "Maribel Santos",
-  contactNumber: "0917 555 0182",
-  remarks: "Prefers guardian contact after 3 PM.",
-};
-
-export function StudentForm({ edit = false }: { edit?: boolean }) {
-  const [errors, setErrors] = useState<FormErrors>({});
-  const [saveState, setSaveState] = useState<SaveState>("idle");
-  const [resultMessage, setResultMessage] = useState("");
-  const [photoName, setPhotoName] = useState("");
-  const photoInput = useRef<HTMLInputElement>(null);
-  const params = useParams<{ id?: string }>();
-  const studentId = Array.isArray(params.id) ? params.id[0] : params.id;
-  const backHref = edit && studentId ? "/students/" + studentId : "/students";
-
-  async function submitForm(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    const formData = new FormData(event.currentTarget);
-    const nextErrors = validate(formData);
-    setErrors(nextErrors);
-    if (Object.keys(nextErrors).length > 0) {
-      setSaveState("idle");
-      toast.error("Check the highlighted fields", { description: "Correct the form details before saving the student record." });
-      return;
-    }
-
-    setSaveState("saving");
-    const toastId = toast.loading(edit ? "Saving changes…" : "Saving student…");
-    const result = await talaApi.saveStudent();
-    setResultMessage(getResultMessage(result, edit));
-    setSaveState(result.status);
-    if (result.status === "success") toast.success(edit ? "Changes saved" : "Student saved", { id: toastId, description: resultMessage || getResultMessage(result, edit) });
-    if (result.status === "conflict") toast.warning("Record updated elsewhere", { id: toastId, description: getResultMessage(result, edit) });
-    if (result.status === "error") toast.error("Could not save student", { id: toastId, description: result.message });
-  }
-
-  return <><Link href={backHref} className="back-link">← {edit ? "Ana Santos" : "Students"}</Link><header className="page-heading form-heading"><div><h1>{edit ? "Edit student" : "Add student"}</h1><p>{edit ? "Update Ana Santos’ learner record and current enrollment." : "Create a learner record and first enrollment."}</p></div></header>
-    <form className="record-form student-form" noValidate onSubmit={submitForm}>
-      <fieldset><legend>Learner identity</legend><p className="field-group-note">Use the learner’s official school record. LRN must contain exactly 12 digits.</p><div className="identity-editor"><Button type="button" variant="outline" className="form-photo-picker" onClick={() => photoInput.current?.click()}><span className="form-photo-placeholder">AS</span><span>{photoName ? "Replace photo" : "Add photo"}</span><small>{photoName || "Optional"}</small></Button><input ref={photoInput} className="sr-only" type="file" accept="image/jpeg,image/png,image/webp" onChange={(event) => setPhotoName(event.target.files?.[0]?.name ?? "")} /><div className="form-grid student-name-grid"><Field label="LRN" name="lrn" error={errors.lrn} className="field-span-full"><Input id="lrn" name="lrn" inputMode="numeric" pattern="[0-9]{12}" maxLength={12} defaultValue={edit ? initialValues.lrn : ""} placeholder="12-digit learner reference number" className="tabular" aria-invalid={Boolean(errors.lrn)} aria-describedby={errors.lrn ? "lrn-error" : undefined} /></Field><Field label="Last name" name="lastName" error={errors.lastName}><Input id="lastName" name="lastName" autoComplete="family-name" defaultValue={edit ? initialValues.lastName : ""} aria-invalid={Boolean(errors.lastName)} aria-describedby={errors.lastName ? "lastName-error" : undefined} /></Field><Field label="First name" name="firstName" error={errors.firstName}><Input id="firstName" name="firstName" autoComplete="given-name" defaultValue={edit ? initialValues.firstName : ""} aria-invalid={Boolean(errors.firstName)} aria-describedby={errors.firstName ? "firstName-error" : undefined} /></Field><Field label="Middle name" name="middleName"><Input id="middleName" name="middleName" defaultValue={edit ? initialValues.middleName : ""} /></Field><Field label="Suffix" name="suffix"><Input id="suffix" name="suffix" placeholder="Jr., III, if applicable" defaultValue={edit ? initialValues.suffix : ""} /></Field></div></div></fieldset>
-      <fieldset><legend>Personal details</legend><div className="form-grid"><Field label="Birthday" name="birthday" error={errors.birthday}><Input id="birthday" name="birthday" type="date" defaultValue={edit ? initialValues.birthday : ""} aria-invalid={Boolean(errors.birthday)} aria-describedby={errors.birthday ? "birthday-error" : undefined} /></Field><Field label="Birthplace" name="birthplace"><Input id="birthplace" name="birthplace" defaultValue={edit ? initialValues.birthplace : ""} /></Field><Field label="Address" name="address" className="field-span-full"><Input id="address" name="address" defaultValue={edit ? initialValues.address : ""} /></Field></div></fieldset>
-      <fieldset><legend>Parent and guardian</legend><div className="form-grid"><Field label="Guardian name" name="guardian"><Input id="guardian" name="guardian" defaultValue={edit ? initialValues.guardian : ""} /></Field><Field label="Contact number" name="contactNumber" error={errors.contactNumber}><Input id="contactNumber" name="contactNumber" inputMode="tel" defaultValue={edit ? initialValues.contactNumber : ""} placeholder="09XX XXX XXXX" aria-invalid={Boolean(errors.contactNumber)} aria-describedby={errors.contactNumber ? "contactNumber-error" : undefined} /></Field></div></fieldset>
-      <fieldset><legend>Current enrollment</legend><p className="field-group-note">This creates or updates the school-year placement, not the student identity.</p><div className="form-grid three"><Field label="School year" name="schoolYear"><select name="schoolYear" defaultValue="2026–2027"><option>2026–2027</option></select></Field><Field label="Grade" name="grade"><select name="grade" defaultValue="Grade 6"><option>Grade 4</option><option>Grade 5</option><option>Grade 6</option></select></Field><Field label="Section" name="section"><select name="section" defaultValue="Rizal"><option>Rizal</option><option>Mabini</option></select></Field></div></fieldset>
-      <fieldset><legend>Remarks</legend><Field label="Notes" name="remarks"><Textarea id="remarks" name="remarks" rows={3} defaultValue={edit ? initialValues.remarks : ""} /></Field></fieldset>
-      {edit ? <p className="concurrency-note"><Icon name="alert" />TALA checks the latest saved version before applying changes. If another teacher updates this record first, you will be asked to reload it.</p> : null}
-      <div className="form-actions"><Link href={backHref} className="button button-secondary">Cancel</Link><Button type="submit" size="lg" disabled={saveState === "saving"}>{saveState === "saving" ? "Saving…" : edit ? "Save changes" : "Save student"}</Button></div>
-      <SaveFeedback state={saveState} message={resultMessage} />
-    </form></>;
+export function StudentForm() {
+  const router = useRouter(); const formRef = useRef<HTMLFormElement>(null); const [years, setYears] = useState<SchoolYear[]>([]); const [grades, setGrades] = useState<Grade[]>([]); const [sections, setSections] = useState<Section[]>([]); const [schoolYearId, setSchoolYearId] = useState(""); const [gradeId, setGradeId] = useState(""); const [sectionId, setSectionId] = useState(""); const [errors, setErrors] = useState<Errors>({}); const [loading, setLoading] = useState(true); const [loadError, setLoadError] = useState(""); const [saving, setSaving] = useState(false); const [createdId, setCreatedId] = useState<string>();
+  useEffect(() => { let cancelled = false; Promise.all([getSchoolYears(), getGrades(), getSections()]).then(([nextYears, nextGrades, nextSections]) => { if (cancelled) return; setYears(nextYears); setGrades(nextGrades); setSections(nextSections); setSchoolYearId(nextYears.find((year) => year.isActive)?.id ?? ""); }).catch(() => !cancelled && setLoadError("We could not load school setup options. Add a school year, grade, and section first." )).finally(() => !cancelled && setLoading(false)); return () => { cancelled = true; }; }, []);
+  const availableSections = useMemo(() => sections.filter((section) => section.schoolYearId === schoolYearId && section.gradeId === gradeId), [sections, schoolYearId, gradeId]);
+  if (loadError) return <><Link href="/students" className="back-link">← Students</Link><Alert variant="destructive"><AlertTitle>Student form unavailable</AlertTitle><AlertDescription>{loadError}</AlertDescription></Alert></>;
+  if (loading) return <div className="flex flex-col gap-5"><Skeleton className="h-8 w-48" /><Skeleton className="h-96 w-full" /></div>;
+  async function submit(event: React.FormEvent<HTMLFormElement>) { event.preventDefault(); const data = new FormData(event.currentTarget); const next: Errors = {}; const lrn = value(data, "lrn"); if (lrn && !/^\d{12}$/.test(lrn)) next.lrn = "Enter a 12-digit LRN."; if (!value(data, "firstName")) next.firstName = "Enter the learner’s first name."; if (!value(data, "lastName")) next.lastName = "Enter the learner’s last name."; if (!schoolYearId) next.schoolYearId = "Choose a school year."; if (!gradeId) next.gradeId = "Choose a grade."; if (!sectionId) next.sectionId = "Choose a section."; setErrors(next); if (Object.keys(next).length) { toast.error("Check the highlighted fields"); return; } setSaving(true); const toastId = toast.loading("Creating student record…"); try { const response = await createStudent({ lrn, firstName: value(data, "firstName"), middleName: value(data, "middleName"), lastName: value(data, "lastName"), suffix: value(data, "suffix"), birthday: value(data, "birthday"), birthplace: value(data, "birthplace"), address: value(data, "address"), fatherName: value(data, "fatherName"), motherName: value(data, "motherName"), guardianName: value(data, "guardianName"), contactNumber: value(data, "contactNumber"), remarks: value(data, "remarks"), schoolYearId, sectionId }); const created = await response.json() as { student: { id: string } }; toast.success("Student created", { id: toastId, description: "The learner and first enrollment are ready." }); setCreatedId(created.student.id); } catch (error) { const message = error instanceof ApiError ? error.message : "Check the learner details and try again."; toast.error("Could not create student", { id: toastId, description: message }); } finally { setSaving(false); } }
+  const continueAdding = () => { formRef.current?.reset(); setGradeId(""); setSectionId(""); setErrors({}); setCreatedId(undefined); };
+  return <><Link href="/students" className="back-link">← Students</Link><header className="page-heading form-heading"><div><h1>Add student</h1><p>Create a learner record and first enrollment.</p></div></header><form ref={formRef} className="record-form student-form" noValidate onSubmit={submit}><fieldset><legend>Learner identity</legend><p className="field-group-note">Use the learner’s official school record. LRN is optional, but must contain 12 digits when provided.</p><div className="form-grid student-name-grid"><FormField label="LRN" name="lrn" error={errors.lrn} className="field-span-full"><Input id="lrn" name="lrn" inputMode="numeric" maxLength={12} placeholder="12-digit learner reference number" className="tabular" aria-invalid={Boolean(errors.lrn)} /></FormField><FormField label="Last name" name="lastName" error={errors.lastName}><Input id="lastName" name="lastName" autoComplete="family-name" aria-invalid={Boolean(errors.lastName)} /></FormField><FormField label="First name" name="firstName" error={errors.firstName}><Input id="firstName" name="firstName" autoComplete="given-name" aria-invalid={Boolean(errors.firstName)} /></FormField><FormField label="Middle name" name="middleName"><Input id="middleName" name="middleName" /></FormField><FormField label="Suffix" name="suffix"><Input id="suffix" name="suffix" placeholder="Jr., III, if applicable" /></FormField></div></fieldset><fieldset><legend>Personal details</legend><div className="form-grid"><FormField label="Birthday" name="birthday"><Input id="birthday" name="birthday" type="date" /></FormField><FormField label="Birthplace" name="birthplace"><Input id="birthplace" name="birthplace" /></FormField><FormField label="Address" name="address" className="field-span-full"><Input id="address" name="address" /></FormField></div></fieldset><fieldset><legend>Parent and guardian</legend><div className="form-grid"><FormField label="Father name" name="fatherName"><Input id="fatherName" name="fatherName" /></FormField><FormField label="Mother name" name="motherName"><Input id="motherName" name="motherName" /></FormField><FormField label="Guardian name" name="guardianName"><Input id="guardianName" name="guardianName" /></FormField><FormField label="Contact number" name="contactNumber"><Input id="contactNumber" name="contactNumber" inputMode="tel" placeholder="09XX XXX XXXX" /></FormField></div></fieldset><fieldset><legend>First enrollment</legend><p className="field-group-note">Choose the school year and grade before selecting a section.</p><div className="form-grid three"><FormField label="School year" name="schoolYearId" error={errors.schoolYearId}><select id="schoolYearId" value={schoolYearId} onChange={(event) => { setSchoolYearId(event.target.value); setSectionId(""); }} aria-invalid={Boolean(errors.schoolYearId)}><option value="">Choose school year</option>{years.map((year) => <option key={year.id} value={year.id}>{year.label}{year.isActive ? " (Active)" : ""}</option>)}</select></FormField><FormField label="Grade" name="gradeId" error={errors.gradeId}><select id="gradeId" value={gradeId} onChange={(event) => { setGradeId(event.target.value); setSectionId(""); }} aria-invalid={Boolean(errors.gradeId)}><option value="">Choose grade</option>{grades.map((grade) => <option key={grade.id} value={grade.id}>{grade.name}</option>)}</select></FormField><FormField label="Section" name="sectionId" error={errors.sectionId}><select id="sectionId" value={sectionId} onChange={(event) => setSectionId(event.target.value)} disabled={!gradeId} aria-invalid={Boolean(errors.sectionId)}><option value="">{gradeId ? "Choose section" : "Choose a grade first"}</option>{availableSections.map((section) => <option key={section.id} value={section.id}>{section.name}</option>)}</select></FormField><FormField label="Adviser" name="adviser" className="field-span-full"><Input id="adviser" value="Available when Teacher records are connected" disabled /><p className="field-group-note">This will become a Teacher relationship; it is not saved as text.</p></FormField></div></fieldset><fieldset><legend>Remarks</legend><FormField label="Notes" name="remarks"><Textarea id="remarks" name="remarks" rows={3} /></FormField></fieldset><div className="form-actions"><Link href="/students" className="button button-secondary">Cancel</Link><Button type="submit" size="lg" disabled={saving}>{saving ? "Saving…" : "Save student"}</Button></div></form><Dialog open={Boolean(createdId)}><DialogContent showCloseButton={false}><DialogHeader><DialogTitle>Student saved</DialogTitle><DialogDescription>The learner record and first enrollment were created successfully.</DialogDescription></DialogHeader><DialogFooter><Button variant="outline" onClick={continueAdding}>Continue adding student</Button><Button onClick={() => router.push("/students")}>Go back to Masterlist</Button></DialogFooter></DialogContent></Dialog></>;
 }
-
-function Field({ label, name, error, className, children }: { label: string; name: string; error?: string; className?: string; children: React.ReactNode }) { return <ShadcnField className={className} data-invalid={Boolean(error)}><FieldLabel htmlFor={name}>{label}</FieldLabel>{children}{error ? <FieldError id={name + "-error"}>{error}</FieldError> : null}</ShadcnField>; }
-
-function validate(data: FormData): FormErrors {
-  const lrn = String(data.get("lrn") ?? "").trim();
-  const firstName = String(data.get("firstName") ?? "").trim();
-  const lastName = String(data.get("lastName") ?? "").trim();
-  const birthday = String(data.get("birthday") ?? "");
-  const contactNumber = String(data.get("contactNumber") ?? "").replace(/[\s()-]/g, "");
-  const errors: FormErrors = {};
-  if (!/^\d{12}$/.test(lrn)) errors.lrn = "Enter a 12-digit LRN.";
-  if (!firstName) errors.firstName = "Enter the learner’s first name.";
-  if (!lastName) errors.lastName = "Enter the learner’s last name.";
-  if (birthday && Number.isNaN(new Date(birthday).getTime())) errors.birthday = "Enter a valid birthday.";
-  if (contactNumber && !/^(09\d{9}|639\d{9})$/.test(contactNumber)) errors.contactNumber = "Use a valid Philippine mobile number.";
-  return errors;
-}
-
-function getResultMessage(result: StudentSaveResult, edit: boolean) {
-  if (result.status === "success") return edit ? "Changes saved. The record is up to date." : "Student saved. The first enrollment is ready.";
-  if (result.status === "conflict") return "This record was updated by someone else. Reload the latest version before saving.";
-  return result.message;
-}
-
-function SaveFeedback({ state, message }: { state: SaveState; message: string }) {
-  if (state !== "conflict") return null;
-  const className = "form-conflict";
-  return <p className={className} role="alert">{message}<button className="text-link">Reload latest version</button></p>;
-}
+function FormField({ label, name, error, className, children }: { label: string; name: string; error?: string; className?: string; children: React.ReactNode }) { return <Field className={className} data-invalid={Boolean(error)}><FieldLabel htmlFor={name}>{label}</FieldLabel>{children}{error ? <FieldError>{error}</FieldError> : null}</Field>; }
