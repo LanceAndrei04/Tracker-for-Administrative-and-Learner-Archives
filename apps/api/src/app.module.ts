@@ -11,6 +11,7 @@ import { StudentsModule } from './students/students.module';
 import { EnrollmentsModule } from './enrollments/enrollments.module';
 import { ImportsModule } from './imports/imports.module';
 import { AuthModule } from './auth/auth.module';
+import { TeachersModule } from './teachers/teachers.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { AuthModule } from './auth/auth.module';
     StudentsModule,
     EnrollmentsModule,
     ImportsModule,
+    TeachersModule,
   ],
   providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })

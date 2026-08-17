@@ -179,10 +179,67 @@ model User {
   email          String   @unique
   role           UserRole @default(TEACHER)
   isActive       Boolean  @default(true)
-  createdAt      DateTime @default(now())
-  updatedAt      DateTime @updatedAt
+
+  teacher Teacher?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@index([role, isActive])
+}
+
+enum TeacherStationStatus {
+  OWN_STATION
+  REASSIGNED
+  BORROWED
+  CLUSTERED
+}
+
+model Teacher {
+  id     String  @id @default(uuid())
+  userId String? @unique
+
+  firstName   String
+  middleName  String?
+  lastName    String
+  suffix      String?
+  gender      String?
+  birthday    DateTime?
+  civilStatus String?
+
+  employeeNumber String                @unique
+  designation    String
+  stationStatus  TeacherStationStatus?
+
+  degreeFinished      String?
+  prcSpecialization   String?
+  minorSpecialization String?
+  postGraduateDegree  String?
+
+  originalAppointmentDate DateTime?
+  stationStartDate        DateTime?
+
+  cellphoneNumber  String?
+  personalEmail    String?
+  depEdEmail       String?
+  office365Account String?
+  r4a3Account      String?
+
+  province String?
+  town     String?
+  barangay String?
+  street   String?
+
+  archivedAt DateTime?
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([lastName, firstName])
+  @@index([designation])
+  @@index([archivedAt])
 }
 
 enum AccessRequestStatus {
