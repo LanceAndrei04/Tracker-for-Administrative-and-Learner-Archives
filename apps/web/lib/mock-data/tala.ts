@@ -22,11 +22,17 @@ export type Student = {
 export type Teacher = {
   id: string;
   name: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
   employeeNumber: string;
   designation: string;
   status: "Permanent" | "Contractual";
   updatedAt: string;
   contactNumber: string;
+  email: string;
+  advisoryAssignment?: string;
+  photoUrl?: string;
 };
 
 export const schoolYears = [
@@ -44,9 +50,9 @@ export const students: Student[] = [
 ];
 
 export const teachers: Teacher[] = [
-  { id: "maria-cruz", name: "Maria Cruz", employeeNumber: "T-2020-014", designation: "Teacher III", status: "Permanent", updatedAt: "Today, 10:12 AM", contactNumber: "0917 555 0199" },
-  { id: "josephine-ramos", name: "Josephine Ramos", employeeNumber: "T-2018-008", designation: "Master Teacher I", status: "Permanent", updatedAt: "Aug 7", contactNumber: "0918 555 0135" },
-  { id: "Ernesto-garcia", name: "Ernesto Garcia", employeeNumber: "T-2024-021", designation: "Teacher I", status: "Contractual", updatedAt: "Aug 4", contactNumber: "0919 555 0171" },
+  { id: "maria-cruz", name: "Maria Cruz", firstName: "Maria", lastName: "Cruz", employeeNumber: "T-2020-014", designation: "Teacher III", status: "Permanent", updatedAt: "Today, 10:12 AM", contactNumber: "0917 555 0199", email: "maria.cruz@tala.school", advisoryAssignment: "Grade 6 · Rizal" },
+  { id: "josephine-ramos", name: "Josephine Ramos", firstName: "Josephine", middleName: "Santos", lastName: "Ramos", employeeNumber: "T-2018-008", designation: "Master Teacher I", status: "Permanent", updatedAt: "Aug 7", contactNumber: "0918 555 0135", email: "josephine.ramos@tala.school", advisoryAssignment: "Grade 5 · Luna" },
+  { id: "ernesto-garcia", name: "Ernesto Garcia", firstName: "Ernesto", lastName: "Garcia", employeeNumber: "T-2024-021", designation: "Teacher I", status: "Contractual", updatedAt: "Aug 4", contactNumber: "0919 555 0171", email: "ernesto.garcia@tala.school" },
 ];
 
 export const files = [
