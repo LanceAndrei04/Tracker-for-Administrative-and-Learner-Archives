@@ -21,7 +21,6 @@ export class TeachersController {
   }
 
   @Post()
-  @Roles('SUPER_ADMIN')
   create(@Body() dto: CreateTeacherDto) {
     return this.teachersService.create(dto);
   }
