@@ -19,20 +19,11 @@ describe('TeachersService', () => {
 
   beforeEach(() => jest.resetAllMocks());
 
-  it('uses the directory-safe record for a teacher profile request', async () => {
-    repository.findDirectoryById.mockResolvedValue({ id: 'teacher-1', firstName: 'Maria', lastName: 'Cruz' });
+  it('uses the full personnel record for an authenticated profile request', async () => {
+    repository.findFullById.mockResolvedValue({ id: 'teacher-1', firstName: 'Maria', lastName: 'Cruz', personalEmail: 'maria@example.com' });
 
-    await expect(service.findById('teacher-1', 'TEACHER')).resolves.toEqual({ id: 'teacher-1', firstName: 'Maria', lastName: 'Cruz' });
-    expect(repository.findDirectoryById).toHaveBeenCalledWith('teacher-1');
-    expect(repository.findFullById).not.toHaveBeenCalled();
-  });
-
-  it('uses the full personnel record only for a Super Admin request', async () => {
-    repository.findFullById.mockResolvedValue({ id: 'teacher-1', personalEmail: 'maria@example.com' });
-
-    await expect(service.findById('teacher-1', 'SUPER_ADMIN')).resolves.toEqual({ id: 'teacher-1', personalEmail: 'maria@example.com' });
+    await expect(service.findById('teacher-1')).resolves.toEqual({ id: 'teacher-1', firstName: 'Maria', lastName: 'Cruz', personalEmail: 'maria@example.com' });
     expect(repository.findFullById).toHaveBeenCalledWith('teacher-1');
-    expect(repository.findDirectoryById).not.toHaveBeenCalled();
   });
 
   it('rejects a duplicate employee number before creating a teacher', async () => {
@@ -52,8 +43,8 @@ describe('TeachersService', () => {
   });
 
   it('reports a missing teacher profile', async () => {
-    repository.findDirectoryById.mockResolvedValue(null);
+    repository.findFullById.mockResolvedValue(null);
 
-    await expect(service.findById('missing', 'TEACHER')).rejects.toBeInstanceOf(NotFoundException);
+    await expect(service.findById('missing')).rejects.toBeInstanceOf(NotFoundException);
   });
 });

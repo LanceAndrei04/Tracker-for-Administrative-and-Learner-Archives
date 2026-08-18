@@ -64,3 +64,31 @@ export type CreateTeacherInput = {
   barangay?: string;
   street?: string;
 };
+
+export type UpdateTeacherInput = Required<Pick<Teacher,
+  | "firstName"
+  | "middleName"
+  | "lastName"
+  | "suffix"
+  | "employeeNumber"
+  | "designation"
+  | "stationStatus"
+  | "gender"
+  | "birthday"
+  | "civilStatus"
+  | "degreeFinished"
+  | "prcSpecialization"
+  | "minorSpecialization"
+  | "postGraduateDegree"
+  | "originalAppointmentDate"
+  | "stationStartDate"
+  | "cellphoneNumber"
+  | "personalEmail"
+  | "depEdEmail"
+  | "office365Account"
+  | "r4a3Account"
+  | "province"
+  | "town"
+  | "barangay"
+  | "street"
+>;

@@ -1,5 +1,5 @@
 import { authenticatedFetch } from "@/lib/api/authenticated-fetch";
-import type { CreateTeacherInput, Teacher, TeacherListQuery, TeacherListResponse } from "./types";
+import type { CreateTeacherInput, Teacher, TeacherListQuery, TeacherListResponse, UpdateTeacherInput } from "./types";
 
 async function json<T>(path: string): Promise<T> {
   return (await authenticatedFetch(path)).json() as Promise<T>;
@@ -18,6 +18,14 @@ export function getTeacher(id: string) {
 export function createTeacher(body: CreateTeacherInput) {
   return authenticatedFetch("/teachers", {
     method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+}
+
+export function updateTeacher(id: string, body: UpdateTeacherInput) {
+  return authenticatedFetch(`/teachers/${id}`, {
+    method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
   });

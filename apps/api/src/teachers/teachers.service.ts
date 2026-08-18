@@ -1,5 +1,5 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
-import type { Prisma, UserRole } from '../generated/prisma/client';
+import type { Prisma } from '../generated/prisma/client';
 import { CreateTeacherDto } from './dto/create-teacher.dto';
 import { TeacherQueryDto } from './dto/teacher-query.dto';
 import { UpdateTeacherDto } from './dto/update-teacher.dto';
@@ -16,10 +16,8 @@ export class TeachersService {
     return this.teachersRepository.findAllDirectory(query);
   }
 
-  async findById(id: string, role: UserRole) {
-    const teacher = role === 'SUPER_ADMIN'
-      ? await this.teachersRepository.findFullById(id)
-      : await this.teachersRepository.findDirectoryById(id);
+  async findById(id: string) {
+    const teacher = await this.teachersRepository.findFullById(id);
     if (!teacher) throw new NotFoundException('Teacher not found.');
     return teacher;
   }

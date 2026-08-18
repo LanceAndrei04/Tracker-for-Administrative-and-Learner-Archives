@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { PencilIcon } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useCurrentUser } from "@/components/auth/auth-context";
 import { getTeacher } from "./teachers-api";
 import type { Teacher, TeacherStationStatus } from "./types";
 
@@ -18,7 +19,6 @@ function valueOf(value: string | null | undefined) { return value || "—"; }
 function dateOf(value: string | null | undefined) { return value ? new Intl.DateTimeFormat("en-PH", { month: "long", day: "numeric", year: "numeric" }).format(new Date(value)) : "—"; }
 
 export function TeacherProfile({ id }: { id: string }) {
-  const user = useCurrentUser();
   const [teacher, setTeacher] = useState<Teacher>();
   const [error, setError] = useState("");
 
@@ -31,16 +31,15 @@ export function TeacherProfile({ id }: { id: string }) {
   if (error) return <><Link href="/teachers" className="back-link">← Teachers</Link><Alert variant="destructive"><AlertTitle>Teacher record unavailable</AlertTitle><AlertDescription>{error}</AlertDescription></Alert></>;
   if (!teacher) return <div className="flex flex-col gap-5"><Skeleton className="h-5 w-24" /><Skeleton className="h-36 w-full" /><Skeleton className="h-80 w-full" /></div>;
 
-  const canViewPersonnel = user?.role === "SUPER_ADMIN";
   return <>
     <Link href="/teachers" className="back-link">← Teachers</Link>
-    <header className="teacher-record-header"><span className="profile-tab tab-teacher" /><Avatar className="teacher-profile-photo" size="lg"><AvatarFallback>{initials(teacher)}</AvatarFallback></Avatar><div className="student-record-title"><p className="record-kicker">Teacher record</p><h1>{displayName(teacher)}</h1><div className="record-identifiers"><span>{teacher.designation}</span><span className="tabular">{teacher.employeeNumber}</span></div></div><div className="record-header-actions"><Badge variant="outline">{displayStationStatus(teacher.stationStatus)}</Badge></div></header>
-    <Tabs defaultValue="overview"><TabsList variant="line" className="profile-tabs" aria-label="Teacher record sections"><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="files">Files</TabsTrigger><TabsTrigger value="activity">Activity</TabsTrigger></TabsList><TabsContent value="overview"><TeacherOverview teacher={teacher} canViewPersonnel={canViewPersonnel} /></TabsContent><TabsContent value="files"><Placeholder title="Files" text="Private teacher files will be connected in a later phase." /></TabsContent><TabsContent value="activity"><Placeholder title="Activity" text="Teacher record activity will be connected in a later phase." /></TabsContent></Tabs>
+    <header className="teacher-record-header"><span className="profile-tab tab-teacher" /><Avatar className="teacher-profile-photo" size="lg"><AvatarFallback>{initials(teacher)}</AvatarFallback></Avatar><div className="student-record-title"><p className="record-kicker">Teacher record</p><h1>{displayName(teacher)}</h1><div className="record-identifiers"><span>{teacher.designation}</span><span className="tabular">{teacher.employeeNumber}</span></div></div><div className="record-header-actions"><Badge variant="outline">{displayStationStatus(teacher.stationStatus)}</Badge><Button nativeButton={false} variant="outline" render={<Link href={`/teachers/${teacher.id}/edit`} />}><PencilIcon data-icon="inline-start" />Edit</Button></div></header>
+    <Tabs defaultValue="overview"><TabsList variant="line" className="profile-tabs" aria-label="Teacher record sections"><TabsTrigger value="overview">Overview</TabsTrigger><TabsTrigger value="files">Files</TabsTrigger><TabsTrigger value="activity">Activity</TabsTrigger></TabsList><TabsContent value="overview"><TeacherOverview teacher={teacher} /></TabsContent><TabsContent value="files"><Placeholder title="Files" text="Private teacher files will be connected in a later phase." /></TabsContent><TabsContent value="activity"><Placeholder title="Activity" text="Teacher record activity will be connected in a later phase." /></TabsContent></Tabs>
   </>;
 }
 
-function TeacherOverview({ teacher, canViewPersonnel }: { teacher: Teacher; canViewPersonnel: boolean }) {
-  return <div className="record-detail-layout"><div className="record-detail-content"><section className="info-section personal-information"><h2>Identity</h2><dl className="name-breakdown teacher-name-breakdown"><div><dt>First Name</dt><dd>{teacher.firstName}</dd></div><div><dt>Middle Name</dt><dd>{valueOf(teacher.middleName)}</dd></div><div><dt>Last Name</dt><dd>{teacher.lastName}</dd></div><div><dt>Suffix</dt><dd>{valueOf(teacher.suffix)}</dd></div></dl></section><InfoSection title="Professional information" items={[["Designation", teacher.designation], ["Employee number", teacher.employeeNumber], ["Station status", displayStationStatus(teacher.stationStatus)]]} />{canViewPersonnel ? <PersonnelSections teacher={teacher} /> : <section className="info-section"><h2>Personnel information</h2><p className="section-copy">Contact, appointment, education, and address details are available only to the Super Admin.</p></section>}</div><aside className="record-summary"><section><p className="record-kicker">Record status</p><p className="summary-note">Last updated {dateOf(teacher.updatedAt)}.</p></section><section><p className="record-kicker">Current assignment</p><p className="summary-note">Adviser assignments will be connected in a later phase.</p></section></aside></div>;
+function TeacherOverview({ teacher }: { teacher: Teacher }) {
+  return <div className="record-detail-layout"><div className="record-detail-content"><section className="info-section personal-information"><h2>Identity</h2><dl className="name-breakdown teacher-name-breakdown"><div><dt>First Name</dt><dd>{teacher.firstName}</dd></div><div><dt>Middle Name</dt><dd>{valueOf(teacher.middleName)}</dd></div><div><dt>Last Name</dt><dd>{teacher.lastName}</dd></div><div><dt>Suffix</dt><dd>{valueOf(teacher.suffix)}</dd></div></dl></section><InfoSection title="Professional information" items={[["Designation", teacher.designation], ["Employee number", teacher.employeeNumber], ["Station status", displayStationStatus(teacher.stationStatus)]]} /><PersonnelSections teacher={teacher} /></div><aside className="record-summary"><section><p className="record-kicker">Record status</p><p className="summary-note">Last updated {dateOf(teacher.updatedAt)}.</p></section><section><p className="record-kicker">Current assignment</p><p className="summary-note">Adviser assignments will be connected in a later phase.</p></section></aside></div>;
 }
 
 function PersonnelSections({ teacher }: { teacher: Teacher }) {
