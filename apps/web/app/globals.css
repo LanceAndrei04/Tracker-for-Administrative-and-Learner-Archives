@@ -55,3 +55,128 @@ body { overflow-x: hidden; }
     @apply bg-background text-foreground; }
   html {
     @apply font-sans; } }
+
+/* Talâ color foundation — navy establishes structure; teal is reserved for progress and emphasis. */
+:root:not(.dark) {
+  --surface-page:#F7F9FB;
+  --surface-card:#FFFFFF;
+  --surface-sunken:#F2F6F8;
+  --ink:#102A43;
+  --muted:#52697D;
+  --soft:#7B8FA3;
+  --accent:#0FA39A;
+  --accent-hover:#148F8A;
+  --warning:#9A6717;
+  --warning-bg:#FFF6DE;
+  --success:#177A69;
+  --success-bg:#E8F6F1;
+  --border:#E3E9EF;
+  --border-strong:#CDD8E1;
+  --shadow:0 1px 3px rgb(11 47 91 / 5%);
+  --shadow-xs:0 1px 2px rgb(11 47 91 / 4%);
+  --shadow-sm:0 1px 3px rgb(11 47 91 / 5%);
+  --shadow-md:0 8px 24px rgb(11 47 91 / 10%);
+
+  --background:#F7F9FB;
+  --foreground:#102A43;
+  --card:#FFFFFF;
+  --card-foreground:#102A43;
+  --popover:#FFFFFF;
+  --popover-foreground:#102A43;
+  --primary:#0B2F5B;
+  --primary-foreground:#FFFFFF;
+  --secondary:#F2F6F8;
+  --secondary-foreground:#27445E;
+  --muted-foreground:#52697D;
+  --accent-foreground:#FFFFFF;
+  --destructive:#C94A4A;
+  --input:#CDD8E1;
+  --ring:#0FA39A;
+  --chart-1:#0B2F5B;
+  --chart-2:#0FA39A;
+  --chart-3:#4C7FA8;
+  --chart-4:#75C9C3;
+  --chart-5:#8DA1B2;
+  --sidebar:#082545;
+  --sidebar-foreground:#EAF1F6;
+  --sidebar-primary:#0FA39A;
+  --sidebar-primary-foreground:#FFFFFF;
+  --sidebar-accent:rgb(15 163 154 / 15%);
+  --sidebar-accent-foreground:#FFFFFF;
+  --sidebar-border:rgb(234 241 246 / 14%);
+  --sidebar-ring:#2EB8B0;
+}
+
+/* Preserve readable contrast while older button links are migrated to shared variants. */
+:root:not(.dark) [data-slot="button"][data-variant="default"],
+:root:not(.dark) .button-primary {
+  background:var(--primary);
+  color:var(--primary-foreground);
+}
+
+:root:not(.dark) [data-slot="button"][data-variant="default"]:hover,
+:root:not(.dark) .button-primary:hover {
+  background:#082545;
+  color:var(--primary-foreground);
+}
+
+:root:not(.dark) .button-secondary {
+  border-color:#D8E1E8;
+  color:#27445E;
+}
+
+/* Application navigation: quiet navy structure with a teal active cue. */
+:root:not(.dark) .sidebar {
+  background:#082545;
+  border-right-color:rgb(234 241 246 / 14%);
+  color:#EAF1F6;
+}
+
+:root:not(.dark) .sidebar .school-identity,
+:root:not(.dark) .sidebar-foot {
+  border-color:rgb(234 241 246 / 14%);
+}
+
+:root:not(.dark) .sidebar .brand,
+:root:not(.dark) .sidebar .school-name {
+  color:#FFFFFF;
+}
+
+:root:not(.dark) .sidebar .brand-mark {
+  border-color:#2EB8B0;
+  color:#2EB8B0;
+}
+
+:root:not(.dark) .sidebar .product-expansion,
+:root:not(.dark) .sidebar .school-workspace,
+:root:not(.dark) .sidebar .account-link small {
+  color:#99AFC1;
+}
+
+:root:not(.dark) .sidebar .nav-link,
+:root:not(.dark) .sidebar .account-link {
+  color:#99AFC1;
+}
+
+:root:not(.dark) .sidebar .nav-link:hover,
+:root:not(.dark) .sidebar .account-link:hover {
+  background:rgb(255 255 255 / 6%);
+  color:#FFFFFF;
+}
+
+:root:not(.dark) .sidebar .nav-current,
+:root:not(.dark) .sidebar .account-link.nav-current {
+  background:rgb(15 163 154 / 15%);
+  box-shadow:inset 3px 0 #2EB8B0;
+  color:#FFFFFF;
+}
+
+:root:not(.dark) .sidebar .nav-current svg,
+:root:not(.dark) .sidebar .account-link.nav-current svg {
+  color:#2EB8B0;
+}
+
+:root:not(.dark) .sidebar .avatar {
+  background:#0FA39A;
+  color:#FFFFFF;
+}

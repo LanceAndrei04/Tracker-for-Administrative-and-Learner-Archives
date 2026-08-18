@@ -91,4 +91,4 @@ export type UpdateTeacherInput = Required<Pick<Teacher,
   | "town"
   | "barangay"
   | "street"
->;
+>>;
